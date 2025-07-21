@@ -1,16 +1,36 @@
 import { Icon } from "@iconify/react";
-import { Grid2 as Grid, IconButton, Tooltip } from "@mui/material";
+import {
+  Grid2 as Grid,
+  IconButton,
+  Tooltip,
+  Menu,
+  MenuItem,
+  Typography,
+} from "@mui/material";
 import { useAtomValue } from "jotai";
 import { boardAtom, gameAtom } from "../states";
 import { useChessActionsWithHistory } from "@/hooks/useChessActionsWithHistory";
-import { useCallback, useEffect } from "react";
+import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
+import { useCallback, useEffect, useState } from "react";
 
 export default function NextMoveButton() {
+  const [useBranches, setUseBranches] = useState(true);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  // Хуки для обеих систем
   const {
     playMove: playBoardMove,
-    redoMove,
-    canRedo,
+    redoMove: redoLinear,
+    canRedo: canRedoLinear,
   } = useChessActionsWithHistory(boardAtom);
+
+  const {
+    redoMove: redoBranched,
+    canRedo: canRedoBranched,
+    getAlternativeMoves,
+    goToNode,
+  } = useChessActionsWithBranches(boardAtom);
+
   const game = useAtomValue(gameAtom);
   const board = useAtomValue(boardAtom);
 
@@ -21,6 +41,12 @@ export default function NextMoveButton() {
   const canPlayNextGameMove =
     boardHistory.length < gameHistory.length &&
     gameHistory.slice(0, boardHistory.length).join() === boardHistory.join();
+
+  const canRedo = useBranches ? canRedoBranched : canRedoLinear;
+  const redoMove = useBranches ? redoBranched : redoLinear;
+
+  // Получаем альтернативные ходы для контекстного меню
+  const alternativeMoves = useBranches ? getAlternativeMoves() : [];
 
   const addNextGameMoveToBoard = useCallback(() => {
     // Сначала пытаемся повторить отмененный ход
@@ -55,12 +81,37 @@ export default function NextMoveButton() {
     playBoardMove,
   ]);
 
+  // Обработка правого клика для показа альтернатив
+  const handleRightClick = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (useBranches && alternativeMoves.length > 1) {
+        event.preventDefault();
+        setAnchorEl(event.currentTarget);
+      }
+    },
+    [useBranches, alternativeMoves.length]
+  );
+
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+  };
+
+  const handleSelectAlternative = (nodeId: string) => {
+    goToNode(nodeId);
+    handleCloseMenu();
+  };
+
   const isButtonEnabled = canRedo || canPlayNextGameMove;
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") {
         addNextGameMoveToBoard();
+      }
+      // Ctrl+B для переключения режимов
+      else if (e.ctrlKey && e.key === "b") {
+        e.preventDefault();
+        setUseBranches(!useBranches);
       }
     };
 
@@ -69,19 +120,49 @@ export default function NextMoveButton() {
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [addNextGameMoveToBoard]);
+  }, [addNextGameMoveToBoard, useBranches]);
+
+  const tooltipTitle = useBranches
+    ? `Go to next move (Redo or next from game) | Ветки: ${alternativeMoves.length > 1 ? "ПКМ для альтернатив" : "нет альтернатив"} | Ctrl+B: переключить режим`
+    : "Go to next move (Redo or next from game) | Ctrl+B: переключить на режим веток";
 
   return (
-    <Tooltip title="Go to next move (Redo or next from game)">
-      <Grid>
-        <IconButton
-          onClick={() => addNextGameMoveToBoard()}
-          disabled={!isButtonEnabled}
-          sx={{ paddingX: 1.2, paddingY: 0.5 }}
-        >
-          <Icon icon="ri:arrow-right-s-line" height={30} />
-        </IconButton>
-      </Grid>
-    </Tooltip>
+    <>
+      <Tooltip title={tooltipTitle}>
+        <Grid>
+          <IconButton
+            onClick={addNextGameMoveToBoard}
+            onContextMenu={handleRightClick}
+            disabled={!isButtonEnabled}
+            sx={{
+              paddingX: 1.2,
+              paddingY: 0.5,
+              backgroundColor: useBranches ? "action.hover" : "transparent",
+            }}
+          >
+            <Icon icon="ri:arrow-right-s-line" height={30} />
+          </IconButton>
+        </Grid>
+      </Tooltip>
+
+      {/* Контекстное меню для альтернативных ходов */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleCloseMenu}
+      >
+        <MenuItem disabled>
+          <Typography variant="caption">Альтернативные ходы:</Typography>
+        </MenuItem>
+        {alternativeMoves.map((altMove) => (
+          <MenuItem
+            key={altMove.nodeId}
+            onClick={() => handleSelectAlternative(altMove.nodeId)}
+          >
+            {altMove.san}
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
   );
 }

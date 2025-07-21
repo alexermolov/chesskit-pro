@@ -1,11 +1,13 @@
-import { Grid2 as Grid } from "@mui/material";
+import { Grid2 as Grid, Button, Box } from "@mui/material";
 import MovesLine from "./movesLine";
-import { useMemo } from "react";
+import BranchesMovesPanel from "./branchesMovesPanel";
+import { useMemo, useState } from "react";
 import { useAtomValue } from "jotai";
 import { boardAtom, gameAtom, gameEvalAtom } from "../../../states";
 import { MoveClassification } from "@/types/enums";
 
 export default function MovesPanel() {
+  const [useBranches, setUseBranches] = useState(true); // По умолчанию используем ветки
   const game = useAtomValue(gameAtom);
   const board = useAtomValue(boardAtom);
   const gameEval = useAtomValue(gameEvalAtom);
@@ -45,6 +47,43 @@ export default function MovesPanel() {
     return moves;
   }, [game, board, gameEval]);
 
+  // Если используем ветки, показываем новый компонент
+  if (useBranches) {
+    return (
+      <Grid
+        container
+        justifyContent="center"
+        alignItems="start"
+        gap={0.5}
+        paddingY={1}
+        sx={{ scrollbarWidth: "thin", overflowY: "auto" }}
+        maxHeight="100%"
+        size={6}
+        id="moves-panel"
+      >
+        <Box
+          sx={{
+            width: "100%",
+            mb: 1,
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => setUseBranches(false)}
+            sx={{ fontSize: "0.7rem" }}
+          >
+            Переключить на линейный режим
+          </Button>
+        </Box>
+        <BranchesMovesPanel />
+      </Grid>
+    );
+  }
+
+  // Оригинальный линейный режим
   if (!gameMoves?.length) return null;
 
   return (
@@ -59,6 +98,19 @@ export default function MovesPanel() {
       size={6}
       id="moves-panel"
     >
+      <Box
+        sx={{ width: "100%", mb: 1, display: "flex", justifyContent: "center" }}
+      >
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={() => setUseBranches(true)}
+          sx={{ fontSize: "0.7rem" }}
+        >
+          Переключить на режим веток
+        </Button>
+      </Box>
+
       {gameMoves?.map((moves, idx) => (
         <MovesLine
           key={`${moves.map(({ san }) => san).join()}-${idx}`}
