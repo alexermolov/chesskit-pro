@@ -2,7 +2,7 @@ import { DEFAULT_ENGINE } from "@/constants";
 import { getRecommendedWorkersNb } from "@/lib/engine/worker";
 import { EngineName } from "@/types/enums";
 import { CurrentPosition, GameEval, SavedEvals } from "@/types/eval";
-import { Chess } from "chess.js";
+import { Chess, Move } from "chess.js";
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
@@ -10,6 +10,15 @@ export const gameEvalAtom = atom<GameEval | undefined>(undefined);
 export const gameAtom = atom(new Chess());
 export const boardAtom = atom(new Chess());
 export const currentPositionAtom = atom<CurrentPosition>({});
+
+// Атом для истории ходов - глобальное состояние
+export const moveHistoryAtom = atom<{
+  allMoves: Move[];
+  currentPosition: number;
+}>({
+  allMoves: [],
+  currentPosition: -1,
+});
 
 export const boardOrientationAtom = atom(true);
 export const showBestMoveArrowAtom = atom(true);

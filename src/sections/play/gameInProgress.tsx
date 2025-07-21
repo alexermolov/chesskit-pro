@@ -8,6 +8,7 @@ import { useAtom, useAtomValue } from "jotai";
 import { gameAtom, isGameInProgressAtom } from "./states";
 import { useEffect } from "react";
 import UndoMoveButton from "./undoMoveButton";
+import RedoMoveButton from "./redoMoveButton";
 
 export default function GameInProgress() {
   const game = useAtomValue(gameAtom);
@@ -42,8 +43,15 @@ export default function GameInProgress() {
         <CircularProgress size={20} color="info" />
       </Grid>
 
-      <Grid container justifyContent="center" alignItems="center" size={12}>
+      <Grid
+        container
+        justifyContent="center"
+        alignItems="center"
+        gap={2}
+        size={12}
+      >
         <UndoMoveButton />
+        <RedoMoveButton />
       </Grid>
 
       <Grid container justifyContent="center" alignItems="center" size={12}>

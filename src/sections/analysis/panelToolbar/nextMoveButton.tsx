@@ -2,23 +2,35 @@ import { Icon } from "@iconify/react";
 import { Grid2 as Grid, IconButton, Tooltip } from "@mui/material";
 import { useAtomValue } from "jotai";
 import { boardAtom, gameAtom } from "../states";
-import { useChessActions } from "@/hooks/useChessActions";
+import { useChessActionsWithHistory } from "@/hooks/useChessActionsWithHistory";
 import { useCallback, useEffect } from "react";
 
 export default function NextMoveButton() {
-  const { playMove: playBoardMove } = useChessActions(boardAtom);
+  const {
+    playMove: playBoardMove,
+    redoMove,
+    canRedo,
+  } = useChessActionsWithHistory(boardAtom);
   const game = useAtomValue(gameAtom);
   const board = useAtomValue(boardAtom);
 
   const gameHistory = game.history();
   const boardHistory = board.history();
 
-  const isButtonEnabled =
+  // Проверяем, можем ли мы добавить следующий ход из игры
+  const canPlayNextGameMove =
     boardHistory.length < gameHistory.length &&
     gameHistory.slice(0, boardHistory.length).join() === boardHistory.join();
 
   const addNextGameMoveToBoard = useCallback(() => {
-    if (!isButtonEnabled) return;
+    // Сначала пытаемся повторить отмененный ход
+    if (canRedo) {
+      redoMove();
+      return;
+    }
+
+    // Если нет отмененных ходов, добавляем следующий ход из игры
+    if (!canPlayNextGameMove) return;
 
     const nextMoveIndex = boardHistory.length;
     const nextMove = game.history({ verbose: true })[nextMoveIndex];
@@ -34,7 +46,16 @@ export default function NextMoveButton() {
         comment,
       });
     }
-  }, [isButtonEnabled, boardHistory, game, playBoardMove]);
+  }, [
+    canRedo,
+    redoMove,
+    canPlayNextGameMove,
+    boardHistory,
+    game,
+    playBoardMove,
+  ]);
+
+  const isButtonEnabled = canRedo || canPlayNextGameMove;
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -51,7 +72,7 @@ export default function NextMoveButton() {
   }, [addNextGameMoveToBoard]);
 
   return (
-    <Tooltip title="Go to next move">
+    <Tooltip title="Go to next move (Redo or next from game)">
       <Grid>
         <IconButton
           onClick={() => addNextGameMoveToBoard()}
