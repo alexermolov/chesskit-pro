@@ -3,14 +3,14 @@
     <img width="120" height="120" src="https://github.com/alexermolov/chesskit-pro/blob/main/public/android-chrome-192x192.png" alt="Logo">
   </a>
 
-<h3 align="center">Chesskit</h3>
+<h3 align="center">ChessKit Pro</h3>
   <p align="center">
     The Ultimate Chess Web and Desktop App
   </p>
 </div>
 <br />
 
-Chesskit is a comprehensive open-source chess platform that combines powerful analysis tools with an intuitive interface. Analyze your games with world-class Stockfish engines, play against AI opponents, and track your chess improvement - all for free on any device.
+Chesskit Pro is a comprehensive open-source chess platform that combines powerful analysis tools with an intuitive interface. Analyze your games with world-class Stockfish engines, play against AI opponents, and track your chess improvement - all for free on any device.
 
 ## ✨ Key Highlights
 
@@ -25,7 +25,7 @@ Chesskit is a comprehensive open-source chess platform that combines powerful an
 
 ## Mission
 
-Chesskit aims to offer all the chess related features it can, while being free and open-source. It is designed to be easy to use, fast, and reliable.
+ChessKit Pro aims to offer all the chess related features it can, while being free and open-source. It is designed to be easy to use, fast, and reliable.
 
 ## Features
 
@@ -78,7 +78,7 @@ Chesskit aims to offer all the chess related features it can, while being free a
 
 ## 🖥️ Desktop App
 
-ChessKit is available as a native desktop application built with Electron:
+ChessKit Pro is available as a native desktop application built with Electron:
 
 - **Cross-platform** - Available for Windows, macOS, and Linux
 - **Offline Analysis** - Full Stockfish analysis without internet connection  
@@ -237,4 +237,4 @@ For more details, see the [LICENSE](LICENSE) file.
 
 ---
 
-**ChessKit** - *Elevating your chess game, one move at a time* ♟️
+**ChessKit Pro** - *Elevating your chess game, one move at a time* ♟️
