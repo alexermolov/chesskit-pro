@@ -30,9 +30,15 @@ interface Props {
   open: boolean;
   onClose: () => void;
   setGame?: (game: Chess) => Promise<void>;
+  setPgn?: (pgn: string) => Promise<void>;
 }
 
-export default function NewGameDialog({ open, onClose, setGame }: Props) {
+export default function NewGameDialog({
+  open,
+  onClose,
+  setGame,
+  setPgn: setPgnCallback,
+}: Props) {
   const [pgn, setPgn] = useState("");
   const [gameOrigin, setGameOrigin] = useLocalStorage(
     "preferred-game-origin",
@@ -47,13 +53,20 @@ export default function NewGameDialog({ open, onClose, setGame }: Props) {
     if (!pgn) return;
 
     try {
-      const gameToAdd = getGameFromPgn(pgn);
-      setSentryContext("loadedGame", { pgn });
-
-      if (setGame) {
-        await setGame(gameToAdd);
+      if (setPgnCallback) {
+        // Используем setPgn для сохранения веток
+        setSentryContext("loadedGame", { pgn });
+        await setPgnCallback(pgn);
       } else {
-        await addGame(gameToAdd);
+        // Используем старый метод с Chess объектом
+        const gameToAdd = getGameFromPgn(pgn);
+        setSentryContext("loadedGame", { pgn });
+
+        if (setGame) {
+          await setGame(gameToAdd);
+        } else {
+          await addGame(gameToAdd);
+        }
       }
 
       setBoardOrientation(boardOrientation ?? true);
@@ -104,7 +117,9 @@ export default function NewGameDialog({ open, onClose, setGame }: Props) {
       }}
     >
       <DialogTitle marginY={1} variant="h5">
-        {setGame ? "Load a game" : "Add a game to your database"}
+        {setGame || setPgnCallback
+          ? "Load a game"
+          : "Add a game to your database"}
       </DialogTitle>
       <DialogContent sx={{ padding: { xs: 2, md: 3 } }}>
         <Grid

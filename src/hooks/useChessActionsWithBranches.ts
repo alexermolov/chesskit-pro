@@ -6,6 +6,7 @@ import { Chess, DEFAULT_POSITION, Move } from "chess.js";
 import { PrimitiveAtom, useAtom } from "jotai";
 import { useCallback, useState, useMemo, useEffect, useRef } from "react";
 import { moveTreeAtom } from "@/sections/analysis/states";
+import { PgnParser } from "@/lib/pgnParser";
 
 export interface resetGameParams {
   fen?: string;
@@ -119,25 +120,25 @@ export const useChessActionsWithBranches = (
     (pgn: string) => {
       setIsManualTreeOperation(true);
 
+      // Используем новый парсер с поддержкой веток
+      const { game: parsedGame, moveTree: newTree } =
+        PgnParser.parsePgnToMoveTree(pgn);
+
+      // Создаем новую игру и восстанавливаем позицию до начала
       const newGame = new Chess();
-      newGame.loadPgn(pgn);
-      setGame(newGame);
-
-      // Создаем новое дерево из PGN
-      let newTree = MoveTreeUtils.createEmptyTree(DEFAULT_POSITION);
-      const moves = newGame.history({ verbose: true });
-
-      moves.forEach((move) => {
-        const { tree } = MoveTreeUtils.addMove(
-          newTree,
-          move,
-          newGame.fen(),
-          newTree.currentNodeId
-        );
-        newTree = tree;
+      const headers = parsedGame.getHeaders();
+      Object.entries(headers).forEach(([key, value]) => {
+        if (value) newGame.setHeader(key, value);
       });
 
-      setMoveTree(newTree);
+      // Устанавливаем дерево с currentNodeId на корневой узел для правильного выделения
+      const correctedTree = {
+        ...newTree,
+        currentNodeId: newTree.rootId,
+      };
+
+      setGame(newGame);
+      setMoveTree(correctedTree);
     },
     [setGame, setMoveTree]
   );

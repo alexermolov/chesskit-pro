@@ -1,8 +1,7 @@
-import LoadGameButton from "../../loadGame/loadGameButton";
+import LoadGameButtonWithPgn from "../../loadGame/loadGameButtonWithPgn";
 import { useCallback, useEffect } from "react";
-import { useChessActions } from "@/hooks/useChessActions";
+import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
 import {
-  boardAtom,
   boardOrientationAtom,
   evaluationProgressAtom,
   gameAtom,
@@ -18,8 +17,8 @@ import { Game } from "@/types/game";
 export default function LoadGame() {
   const router = useRouter();
   const game = useAtomValue(gameAtom);
-  const { setPgn: setGamePgn } = useChessActions(gameAtom);
-  const { resetToStartingPosition: resetBoard } = useChessActions(boardAtom);
+  const { setPgn: setGamePgn, reset: resetBoard } =
+    useChessActionsWithBranches(gameAtom);
   const { gameFromUrl } = useGameDatabase();
   const setEval = useSetAtom(gameEvalAtom);
   const setBoardOrientation = useSetAtom(boardOrientationAtom);
@@ -27,7 +26,7 @@ export default function LoadGame() {
 
   const resetAndSetGamePgn = useCallback(
     (pgn: string) => {
-      resetBoard(pgn);
+      resetBoard();
       setEval(undefined);
       setGamePgn(pgn);
     },
@@ -86,12 +85,13 @@ export default function LoadGame() {
   if (evaluationProgress) return null;
 
   return (
-    <LoadGameButton
+    <LoadGameButtonWithPgn
       label={isGameLoaded ? "Load another game" : "Load game"}
       size="small"
-      setGame={async (game) => {
+      setPgn={async (pgn) => {
         await router.push("/");
-        resetAndSetGamePgn(game.pgn());
+        // Используем PGN напрямую, чтобы сохранить вариации
+        resetAndSetGamePgn(pgn);
       }}
     />
   );
