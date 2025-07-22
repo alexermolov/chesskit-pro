@@ -108,7 +108,7 @@ function createMenu() {
     ...(process.platform === "darwin"
       ? [
           {
-            label: "ChessKit",
+            label: "ChessKit-Pro",
             submenu: [
               { role: "about" },
               { type: "separator" },
@@ -185,7 +185,7 @@ function createMenu() {
       role: "help",
       submenu: [
         {
-          label: "О программе ChessKit",
+          label: "О программе ChessKit-Pro",
           click: async () => {
             const { shell } = require("electron");
             await shell.openExternal("https://github.com/your-repo/chesskit");

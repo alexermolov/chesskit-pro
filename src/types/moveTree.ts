@@ -1,36 +1,36 @@
 import { Move } from "chess.js";
 
-// Узел дерева ходов
+// Move tree node
 export interface MoveTreeNode {
-  id: string; // Уникальный идентификатор узла
-  move: Move | null; // Ход (null для корневого узла)
-  parent: string | null; // ID родительского узла
-  children: string[]; // Массив ID дочерних узлов
-  san: string; // Шахматная нотация для отображения
-  comment?: string; // Комментарий к ходу
-  fen: string; // Позиция после хода
+  id: string; // Unique node identifier
+  move: Move | null; // Move (null for root node)
+  parent: string | null; // Parent node ID
+  children: string[]; // Array of child node IDs
+  san: string; // Chess notation for display
+  comment?: string; // Move comment
+  fen: string; // Position after move
 }
 
-// Структура дерева ходов с ветками
+// Move tree structure with branches
 export interface MoveTree {
-  nodes: { [nodeId: string]: MoveTreeNode }; // Все узлы дерева
-  rootId: string; // ID корневого узла
-  currentNodeId: string; // ID текущего активного узла
-  mainLineIds: string[]; // ID узлов главной линии
+  nodes: { [nodeId: string]: MoveTreeNode }; // All tree nodes
+  rootId: string; // Root node ID
+  currentNodeId: string; // Current active node ID
+  mainLineIds: string[]; // Main line node IDs
 }
 
-// Информация о ветке
+// Branch information
 export interface BranchInfo {
   id: string;
   name: string;
-  nodeIds: string[]; // Путь от корня до конца ветки
+  nodeIds: string[]; // Path from root to branch end
   isMainLine: boolean;
   moveCount: number;
 }
 
-// Утилиты для работы с деревом ходов
+// Move tree utilities
 export class MoveTreeUtils {
-  // Создание нового пустого дерева
+  // Create new empty tree
   static createEmptyTree(initialFen: string): MoveTree {
     const rootId = "root";
     const rootNode: MoveTreeNode = {
@@ -50,7 +50,7 @@ export class MoveTreeUtils {
     };
   }
 
-  // Добавление хода в дерево
+  // Add move to tree
   static addMove(
     tree: MoveTree,
     move: Move,
@@ -87,7 +87,7 @@ export class MoveTreeUtils {
       currentNodeId: nodeId,
     };
 
-    // Если добавляем к концу главной линии, расширяем её
+    // If adding to end of main line, extend it
     if (parent === tree.mainLineIds[tree.mainLineIds.length - 1]) {
       newTree.mainLineIds = [...tree.mainLineIds, nodeId];
     }
@@ -95,7 +95,7 @@ export class MoveTreeUtils {
     return { tree: newTree, nodeId };
   }
 
-  // Получение пути от корня до узла
+  // Get path from root to node
   static getPathToNode(tree: MoveTree, nodeId: string): string[] {
     const path: string[] = [];
     let currentId: string | null = nodeId;
@@ -109,7 +109,7 @@ export class MoveTreeUtils {
     return path;
   }
 
-  // Получение всех ходов от корня до узла
+  // Get all moves from root to node
   static getMovesToNode(tree: MoveTree, nodeId: string): Move[] {
     const path = this.getPathToNode(tree, nodeId);
     return path
@@ -117,26 +117,26 @@ export class MoveTreeUtils {
       .filter((move): move is Move => move !== null);
   }
 
-  // Получение всех веток
+  // Get all branches
   static getAllBranches(tree: MoveTree): BranchInfo[] {
     const branches: BranchInfo[] = [];
 
-    // Главная линия
+    // Main line
     const mainLine: BranchInfo = {
       id: "main",
-      name: "Главная линия",
+      name: "Main line",
       nodeIds: tree.mainLineIds,
       isMainLine: true,
-      moveCount: tree.mainLineIds.length - 1, // Исключаем корневой узел
+      moveCount: tree.mainLineIds.length - 1, // Exclude root node
     };
     branches.push(mainLine);
 
-    // Поиск всех концевых узлов (листьев)
+    // Find all leaf nodes
     const leafNodes = Object.values(tree.nodes).filter(
       (node) => node.children.length === 0 && node.id !== tree.rootId
     );
 
-    // Создаем ветки для каждого листа, который не в главной линии
+    // Create branches for each leaf not in main line
     leafNodes.forEach((leaf, index) => {
       const path = this.getPathToNode(tree, leaf.id);
       const isMainLineBranch = tree.mainLineIds.includes(leaf.id);
@@ -155,7 +155,7 @@ export class MoveTreeUtils {
     return branches;
   }
 
-  // Переход к узлу
+  // Go to node
   static goToNode(tree: MoveTree, nodeId: string): MoveTree {
     if (!tree.nodes[nodeId]) {
       throw new Error(`Node ${nodeId} not found`);
@@ -167,7 +167,7 @@ export class MoveTreeUtils {
     };
   }
 
-  // Удаление ветки (узла и всех его потомков)
+  // Delete branch (node and all its descendants)
   static deleteBranch(tree: MoveTree, nodeId: string): MoveTree {
     if (nodeId === tree.rootId) {
       throw new Error("Cannot delete root node");
@@ -178,7 +178,7 @@ export class MoveTreeUtils {
       throw new Error(`Node ${nodeId} not found`);
     }
 
-    // Собираем все узлы для удаления (узел и все его потомки)
+    // Collect all nodes to delete (node and all its descendants)
     const nodesToDelete = new Set<string>();
     const collectNodes = (id: string) => {
       nodesToDelete.add(id);
@@ -189,11 +189,11 @@ export class MoveTreeUtils {
     };
     collectNodes(nodeId);
 
-    // Создаем новые узлы без удаляемых
+    // Create new nodes without deleted ones
     const newNodes = { ...tree.nodes };
     nodesToDelete.forEach((id) => delete newNodes[id]);
 
-    // Удаляем ссылку из родителя
+    // Remove reference from parent
     if (node.parent) {
       const parent = newNodes[node.parent];
       if (parent) {
@@ -201,12 +201,12 @@ export class MoveTreeUtils {
       }
     }
 
-    // Обновляем главную линию, если она затронута
+    // Update main line if affected
     const newMainLineIds = tree.mainLineIds.filter(
       (id) => !nodesToDelete.has(id)
     );
 
-    // Если текущий узел удален, переходим к родителю
+    // If current node is deleted, go to parent
     let newCurrentNodeId = tree.currentNodeId;
     if (nodesToDelete.has(tree.currentNodeId)) {
       newCurrentNodeId = node.parent || tree.rootId;
@@ -220,7 +220,7 @@ export class MoveTreeUtils {
     };
   }
 
-  // Промоция ветки в главную линию
+  // Promote branch to main line
   static promoteToMainLine(tree: MoveTree, nodeId: string): MoveTree {
     const path = this.getPathToNode(tree, nodeId);
 
@@ -228,5 +228,76 @@ export class MoveTreeUtils {
       ...tree,
       mainLineIds: [tree.rootId, ...path],
     };
+  }
+
+  // Convert move tree to PGN string with branches
+  static toPgn(tree: MoveTree): string {
+    // Recursive function to build PGN with proper branch order
+    const buildPgn = (nodeId: string, depth: number = 0): string[] => {
+      const node = tree.nodes[nodeId];
+      if (!node) return [];
+
+      const result: string[] = [];
+
+      // If this is a move (not root), add it
+      if (node.move) {
+        const moveNumber = Math.floor((depth - 1) / 2) + 1;
+        const isWhite = (depth - 1) % 2 === 0;
+
+        // Check if this node is an alternative move
+        const isAlternativeMove =
+          node.parent &&
+          tree.nodes[node.parent] &&
+          tree.nodes[node.parent].children.indexOf(node.id) > 0;
+
+        // Add move number
+        if (isWhite) {
+          result.push(`${moveNumber}.`);
+        } else if (isAlternativeMove) {
+          // For black moves that are alternatives
+          result.push(`${moveNumber}...`);
+        }
+        // For black moves in main line, don't add number
+
+        result.push(node.san);
+      }
+
+      // If there are children, process them
+      if (node.children.length > 0) {
+        // First child - main line
+        const mainChild = node.children[0];
+
+        // Continue main line
+        const mainMoves = buildPgn(mainChild, depth + 1);
+        result.push(...mainMoves);
+
+        // AFTER main line add alternative branches
+        for (let i = 1; i < node.children.length; i++) {
+          const altChild = node.children[i];
+          result.push("(");
+
+          // Recursively build alternative branch
+          const altMoves = buildPgn(altChild, depth + 1);
+          result.push(...altMoves);
+
+          result.push(")");
+        }
+      }
+
+      return result;
+    };
+
+    // Start from root
+    const allMoves = buildPgn(tree.rootId);
+
+    // Добавляем завершающий символ если есть ходы
+    if (allMoves.length > 0) {
+      allMoves.push("*");
+    }
+
+    return allMoves
+      .join(" ")
+      .replace(/(\d+)\. /g, "$1.")
+      .replace(/(\d+)\.\.\. /g, "$1...");
   }
 }

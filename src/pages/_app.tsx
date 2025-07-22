@@ -5,7 +5,6 @@ import "@fontsource/roboto/700.css";
 import { AppProps } from "next/app";
 import Layout from "@/sections/layout";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import "@/lib/pgnParserTest"; // Импортируем тест для доступа в браузере
 
 const queryClient = new QueryClient();
 

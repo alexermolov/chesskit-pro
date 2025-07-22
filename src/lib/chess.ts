@@ -57,8 +57,8 @@ export const setGameHeaders = (
   game: Chess,
   params: { white?: Player; black?: Player; resigned?: Color } = {}
 ): Chess => {
-  game.setHeader("Event", "Chesskit Game");
-  game.setHeader("Site", "Chesskit.org");
+  game.setHeader("Event", "Chesskit-Pro Game");
+  game.setHeader("Site", "Chesskit-Pro.org");
   game.setHeader(
     "Date",
     new Date().toISOString().split("T")[0].replace(/-/g, ".")

@@ -75,7 +75,7 @@ export default function NavBar({ darkMode, switchDarkMode }: Props) {
 
           <Image
             src="./favicon-32x32.png"
-            alt="Chesskit logo"
+            alt="Chesskit-Pro logo"
             width={32}
             height={32}
           />
@@ -90,7 +90,7 @@ export default function NavBar({ darkMode, switchDarkMode }: Props) {
                 fontSize: { xs: "1rem", sm: "1.25rem" },
               }}
             >
-              Chesskit
+              Chesskit-Pro
             </Typography>
           </NavLink>
 

@@ -70,7 +70,16 @@ export const useCurrentPosition = (engine: UciEngine | null) => {
       }
     }
 
-    setCurrentPosition(position);
+    // Проверяем, изменилась ли позиция перед обновлением
+    const hasChanged =
+      currentPosition.currentMoveIdx !== position.currentMoveIdx ||
+      currentPosition.lastMove?.san !== position.lastMove?.san ||
+      currentPosition.opening !== position.opening ||
+      JSON.stringify(currentPosition.eval) !== JSON.stringify(position.eval);
+
+    if (hasChanged) {
+      setCurrentPosition(position);
+    }
 
     if (
       !position.eval &&

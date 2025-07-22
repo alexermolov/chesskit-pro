@@ -1,26 +1,30 @@
+import BranchSelectionModal from "@/components/BranchSelectionModal";
+import { useBranchNavigation } from "@/hooks/useBranchNavigation";
+import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
+import { useChessActionsWithHistory } from "@/hooks/useChessActionsWithHistory";
+import { MoveTreeUtils } from "@/types/moveTree";
+import { Icon } from "@iconify/react";
 import {
   Grid2 as Grid,
   IconButton,
-  Tooltip,
   Menu,
   MenuItem,
+  Tooltip,
   Typography,
 } from "@mui/material";
-import { Icon } from "@iconify/react";
-import { useAtomValue } from "jotai";
-import { boardAtom, gameAtom } from "../states";
-import { useChessActionsWithHistory } from "@/hooks/useChessActionsWithHistory";
-import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
 import { Move } from "chess.js";
+import { useAtomValue } from "jotai";
+import { useCallback, useEffect, useState } from "react";
+import { boardAtom, gameAtom, moveTreeAtom } from "../states";
 import FlipBoardButton from "./flipBoardButton";
+import GoToLastPositionButton from "./goToLastPositionButton";
 import NextMoveButton from "./nextMoveButton";
 import RedoMoveButton from "./redoMoveButton";
-import GoToLastPositionButton from "./goToLastPositionButton";
 import SaveButton from "./saveButton";
-import { useCallback, useEffect, useState } from "react";
 
 export default function PanelToolBar() {
   const board = useAtomValue(boardAtom);
+  const moveTree = useAtomValue(moveTreeAtom);
   const [useBranches, setUseBranches] = useState(true);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -37,6 +41,16 @@ export default function PanelToolBar() {
     currentMoves,
   } = useChessActionsWithBranches(boardAtom);
 
+  // Хук для навигации с модальным окном
+  const {
+    isModalOpen,
+    availableBranches,
+    redoMove: redoMoveWithModal,
+    handleBranchSelect,
+    closeBranchModal,
+    currentMove,
+  } = useBranchNavigation(boardAtom);
+
   const canUndo = useBranches ? canUndoBranched : canUndoLinear;
   const undoMove = useBranches ? undoBranchedMove : undoBoardMove;
 
@@ -45,6 +59,15 @@ export default function PanelToolBar() {
 
   const boardHistory = board.history();
   const game = useAtomValue(gameAtom);
+
+  // Функция для получения PGN с ветками
+  const getPgnWithBranches = useCallback(() => {
+    const hasMovesInTree = Object.keys(moveTree.nodes).length > 1;
+    if (hasMovesInTree) {
+      return MoveTreeUtils.toPgn(moveTree);
+    }
+    return game.pgn();
+  }, [moveTree, game]);
 
   const handleUndoMove = useCallback(() => {
     if (canUndo) {
@@ -69,8 +92,16 @@ export default function PanelToolBar() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      // Не обрабатываем клавиши если открыто модальное окно выбора веток
+      if (isModalOpen) {
+        return;
+      }
+
       if (e.key === "ArrowLeft") {
         if (canUndo) undoMove();
+      } else if (e.key === "ArrowRight" && useBranches) {
+        // Используем новую функцию redoMove с поддержкой модального окна
+        redoMoveWithModal();
       } else if (e.key === "ArrowDown") {
         resetBoard();
       }
@@ -91,7 +122,15 @@ export default function PanelToolBar() {
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [undoMove, resetBoard, canUndo, handleUndoMove, useBranches]);
+  }, [
+    undoMove,
+    resetBoard,
+    canUndo,
+    handleUndoMove,
+    useBranches,
+    isModalOpen,
+    redoMoveWithModal,
+  ]);
 
   const undoTooltipTitle = useBranches
     ? `Go to previous move (Ctrl+Z) | Ветки: ${recentMoves.length > 1 ? "ПКМ для истории" : "нет истории"} | Ctrl+B: переключить режим`
@@ -140,9 +179,12 @@ export default function PanelToolBar() {
         <Tooltip title="Copy pgn">
           <Grid>
             <IconButton
-              disabled={game.history().length === 0}
+              disabled={
+                game.history().length === 0 &&
+                Object.keys(moveTree.nodes).length <= 1
+              }
               onClick={() => {
-                navigator.clipboard?.writeText?.(game.pgn());
+                navigator.clipboard?.writeText?.(getPgnWithBranches());
               }}
               sx={{ paddingX: 1.2, paddingY: 0.5 }}
             >
@@ -181,6 +223,15 @@ export default function PanelToolBar() {
           </MenuItem>
         ))}
       </Menu>
+
+      {/* Модальное окно для выбора ветки */}
+      <BranchSelectionModal
+        open={isModalOpen}
+        onClose={closeBranchModal}
+        branches={availableBranches}
+        onSelectBranch={handleBranchSelect}
+        currentMove={currentMove}
+      />
     </>
   );
 }

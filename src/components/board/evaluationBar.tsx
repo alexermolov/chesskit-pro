@@ -22,13 +22,17 @@ export default function EvaluationBar({
   });
   const position = useAtomValue(currentPositionAtom);
 
+  // Используем стабильные примитивные значения для зависимостей
+  const hasEval = !!position?.eval;
+  const evalDepth = position?.eval?.lines[0]?.depth || 0;
+  const evalCp = position?.eval?.lines[0]?.cp || 0;
+
   useEffect(() => {
-    const bestLine = position?.eval?.lines[0];
-    if (!position.eval || !bestLine || bestLine.depth < 6) return;
+    if (!hasEval || evalDepth < 6 || !position.eval) return;
 
     const evalBar = getEvaluationBarValue(position.eval);
     setEvalBar(evalBar);
-  }, [position]);
+  }, [hasEval, evalDepth, evalCp, position.eval]);
 
   return (
     <Grid

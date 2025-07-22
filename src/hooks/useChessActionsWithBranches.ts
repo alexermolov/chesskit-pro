@@ -49,6 +49,9 @@ export const useChessActionsWithBranches = (
     return MoveTreeUtils.getAllBranches(moveTree);
   }, [moveTree]);
 
+  // Получаем длину истории для зависимости useEffect
+  const gameHistoryLength = game.history().length;
+
   // Синхронизация дерева с игрой
   useEffect(() => {
     if (isManualTreeOperation) {
@@ -71,6 +74,7 @@ export const useChessActionsWithBranches = (
     if (gameHistoryMoves.length > treeMovesCount) {
       const newMoves = gameHistoryMoves.slice(treeMovesCount);
       let currentTree = moveTree;
+      let hasChanges = false;
 
       newMoves.forEach((move) => {
         const { tree } = MoveTreeUtils.addMove(
@@ -80,12 +84,21 @@ export const useChessActionsWithBranches = (
           currentTree.currentNodeId
         );
         currentTree = tree;
+        hasChanges = true;
       });
 
-      setMoveTree(currentTree);
+      // Обновляем только если были изменения
+      if (hasChanges) {
+        setMoveTree(currentTree);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game, moveTree.currentNodeId, setMoveTree, isManualTreeOperation]);
+  }, [
+    gameHistoryLength,
+    moveTree.currentNodeId,
+    setMoveTree,
+    isManualTreeOperation,
+  ]);
 
   // Восстановление игры из дерева
   const reconstructGameFromTree = useCallback(

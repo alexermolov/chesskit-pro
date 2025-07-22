@@ -9,7 +9,6 @@ export class Stockfish17 {
     }
 
     const multiThreadIsSupported = isMultiThreadSupported();
-    if (!multiThreadIsSupported) console.log("Single thread mode");
 
     const enginePath = `engines/stockfish-17/stockfish-17${
       lite ? "-lite" : ""

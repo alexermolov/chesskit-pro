@@ -35,16 +35,19 @@ export default function LoadGame() {
 
   const { pgn: pgnParam, orientation: orientationParam } = router.query;
 
+  // Получаем стабильную ссылку на историю игры для сравнения
+  const gameHistoryString = game.history().join();
+
   useEffect(() => {
     const loadGameFromIdParam = (gameUrl: Game) => {
       const gamefromDbChess = new Chess();
       gamefromDbChess.loadPgn(gameUrl.pgn);
-      if (game.history().join() === gamefromDbChess.history().join()) return;
+      if (gameHistoryString === gamefromDbChess.history().join()) return;
 
       resetAndSetGamePgn(gameUrl.pgn);
       setEval(gameUrl.eval);
       setBoardOrientation(
-        gameUrl.black.name === "You" && gameUrl.site === "Chesskit.org"
+        gameUrl.black.name === "You" && gameUrl.site === "Chesskit-Pro"
           ? false
           : true
       );
@@ -56,7 +59,7 @@ export default function LoadGame() {
 
       const gameFromPgnParam = new Chess();
       gameFromPgnParam.loadPgn(decodedPgn || "");
-      if (game.history().join() === gameFromPgnParam.history().join()) return;
+      if (gameHistoryString === gameFromPgnParam.history().join()) return;
 
       resetAndSetGamePgn(decodedPgn);
       setBoardOrientation(orientationParam !== "black");
@@ -71,7 +74,7 @@ export default function LoadGame() {
     gameFromUrl,
     pgnParam,
     orientationParam,
-    game,
+    gameHistoryString,
     resetAndSetGamePgn,
     setEval,
     setBoardOrientation,

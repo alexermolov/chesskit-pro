@@ -1,5 +1,5 @@
-import { Chess } from "chess.js";
 import { MoveTree, MoveTreeUtils } from "@/types/moveTree";
+import { Chess } from "chess.js";
 
 const DEFAULT_POSITION =
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -117,8 +117,8 @@ export class PgnParser {
               moveTree = result.tree;
               currentNodeId = result.nodeId;
             }
-          } catch (error) {
-            console.warn(`Невозможно сделать ход: ${token.value}`, error);
+          } catch {
+            // Ошибка при попытке сделать ход - пропускаем
           }
           break;
 
@@ -136,8 +136,7 @@ export class PgnParser {
             // Простое восстановление - откатываем один ход
             try {
               currentGame.undo();
-            } catch (error) {
-              console.warn("Ошибка при откате хода для вариации:", error);
+            } catch {
               // Если не можем откатить, восстанавливаем позицию через FEN
               const parentNodeData = moveTree.nodes[currentNodeId];
               if (parentNodeData && parentNodeData.fen) {
@@ -193,11 +192,8 @@ export class PgnParser {
     moveTree: MoveTree;
   } {
     try {
-      console.log("Парсинг PGN:", pgn.substring(0, 200) + "...");
-
       // Токенизируем PGN
       const tokens = this.tokenizePgn(pgn);
-      console.log("Токены:", tokens);
 
       // Создаем дерево из токенов
       const moveTree = this.parseTokensToMoveTree(tokens);
@@ -206,17 +202,9 @@ export class PgnParser {
       const game = new Chess();
       try {
         game.loadPgn(pgn);
-      } catch (error) {
-        console.warn(
-          "Ошибка загрузки PGN в Chess.js, используем пустую игру:",
-          error
-        );
+      } catch {
+        // Ошибка загрузки PGN в Chess.js, используем пустую игру
       }
-
-      console.log(
-        "Создано дерево с узлами:",
-        Object.keys(moveTree.nodes).length
-      );
 
       return { game, moveTree };
     } catch (error) {

@@ -36,9 +36,8 @@ export default function BranchMoveItem({
   const handleClick = () => {
     if (isCurrentMove) return;
 
-    // Пока оставляем простую заглушку
-    // TODO: Реализовать переход к конкретному ходу в дереве
-    console.log(`Clicked on move ${moveIdx}: ${san}`);
+    // Simple stub for now
+    // TODO: Implement navigation to specific move in tree
   };
 
   return (

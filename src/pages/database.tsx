@@ -24,8 +24,6 @@ export default function GameDatabase() {
   const { games, deleteGame } = useGameDatabase(true);
   const router = useRouter();
 
-  console.log(games);
-
   const handleDeleteGameRow = useCallback(
     (id: GridRowId) => async () => {
       if (typeof id !== "number") {
@@ -178,7 +176,7 @@ export default function GameDatabase() {
       gap={4}
       marginTop={6}
     >
-      <PageTitle title="Chesskit Game Database" />
+      <PageTitle title="Chesskit-Pro Game Database" />
 
       <Grid container justifyContent="center" alignItems="center" size={12}>
         <LoadGameButton />

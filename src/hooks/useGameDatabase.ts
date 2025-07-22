@@ -67,6 +67,37 @@ export const useGameDatabase = (shouldFetchGames?: boolean) => {
     [db, loadGames]
   );
 
+  const addGameWithCustomPgn = useCallback(
+    async (game: Chess, customPgn: string) => {
+      if (!db) throw new Error("Database not initialized");
+
+      const headers = game.getHeaders();
+      const gameToAdd = {
+        pgn: customPgn,
+        event: headers.Event,
+        site: headers.Site,
+        date: headers.Date,
+        round: headers.Round ?? "?",
+        white: {
+          name: headers.White || "White",
+          rating: headers.WhiteElo ? Number(headers.WhiteElo) : undefined,
+        },
+        black: {
+          name: headers.Black || "Black",
+          rating: headers.BlackElo ? Number(headers.BlackElo) : undefined,
+        },
+        result: headers.Result,
+        termination: headers.Termination,
+        timeControl: headers.TimeControl,
+      };
+
+      const gameId = await db.add("games", gameToAdd as Game);
+      loadGames();
+      return gameId;
+    },
+    [db, loadGames]
+  );
+
   const setGameEval = useCallback(
     async (gameId: number, evaluation: GameEval) => {
       if (!db) throw new Error("Database not initialized");
@@ -120,6 +151,7 @@ export const useGameDatabase = (shouldFetchGames?: boolean) => {
 
   return {
     addGame,
+    addGameWithCustomPgn,
     setGameEval,
     getGame,
     deleteGame,

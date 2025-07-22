@@ -137,7 +137,6 @@ export class UciEngine {
   }
 
   private terminateWorker(worker: EngineWorker) {
-    console.log(`Terminating worker from ${this.enginePath}`);
     worker.isReady = false;
     worker.uci("quit");
     worker.terminate();
@@ -375,7 +374,7 @@ export class UciEngine {
       setPartialEval(parsedResults);
     };
 
-    console.log(`Evaluating position: ${fen}`);
+    // console.log(`Evaluating position: ${fen}`); // Отключено для продакшена
 
     const lichessEval = await lichessEvalPromise;
     if (
@@ -405,7 +404,7 @@ export class UciEngine {
     await this.stopAllCurrentJobs();
     await this.setElo(elo);
 
-    console.log(`Evaluating position: ${fen}`);
+    // console.log(`Evaluating position: ${fen}`); // Отключено для продакшена
 
     const results = await this.sendCommands(
       [`position fen ${fen}`, `go depth ${depth}`],
