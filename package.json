@@ -68,7 +68,7 @@
   },
   "build": {
     "appId": "com.chesskit.app",
-    "productName": "ChessKit",
+    "productName": "ChessKit Pro",
     "directories": {
       "output": "dist"
     },
@@ -83,15 +83,21 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ]
     },
     "win": {
+      "executableName": "ChessKitPro",
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
@@ -99,7 +105,9 @@
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "category": "Game"
