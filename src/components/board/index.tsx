@@ -1,5 +1,6 @@
 import { CLASSIFICATION_COLORS } from "@/constants";
 import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
+import { PgnParser } from "@/lib/pgnParser";
 import { Color, MoveClassification } from "@/types/enums";
 import { CurrentPosition } from "@/types/eval";
 import { Player } from "@/types/game";
@@ -51,7 +52,7 @@ export default function Board({
 }: Props) {
   const boardRef = useRef<HTMLDivElement>(null);
   const game = useAtomValue(gameAtom);
-  const { playMove } = useChessActionsWithBranches(gameAtom);
+  const { playMove, moveTree } = useChessActionsWithBranches(gameAtom);
   const clickedSquaresAtom = useMemo(() => atom<Square[]>([]), []);
   const setClickedSquares = useSetAtom(clickedSquaresAtom);
   const playableSquaresAtom = useMemo(() => atom<Square[]>([]), []);
@@ -212,20 +213,79 @@ export default function Board({
     const moveClassification = position?.eval?.moveClassification;
     const lines = position?.lastEval?.lines || [];
     const arrows: Arrow[] = [];
+    let hasCommentArrows = false;
 
-    // Add arrows for all analysis lines
-    lines.forEach((line, index) => {
+    // Add arrows from current move comment
+    if (moveTree && moveTree.currentNodeId) {
+      const currentNode = moveTree.nodes[moveTree.currentNodeId];
+      if (currentNode?.comment) {
+        const commentArrows = PgnParser.extractArrowsFromComment(
+          currentNode.comment
+        );
+
+        if (commentArrows.length > 0) {
+          hasCommentArrows = true;
+        }
+
+        commentArrows.forEach((arrow) => {
+          // Convert color names to hex colors
+          let arrowColor = "#ff6b35"; // Default orange color
+
+          switch (arrow.color?.toLowerCase()) {
+            case "red":
+            case "r":
+              arrowColor = "#e74c3c";
+              break;
+            case "green":
+            case "g":
+              arrowColor = "#2ecc71";
+              break;
+            case "blue":
+            case "b":
+              arrowColor = "#3498db";
+              break;
+            case "yellow":
+            case "y":
+              arrowColor = "#f1c40f";
+              break;
+            case "orange":
+            case "o":
+              arrowColor = "#ff6b35";
+              break;
+            default:
+              arrowColor = "#ff6b35";
+              break;
+          }
+
+          const commentArrow = [
+            arrow.from,
+            arrow.to,
+            tinycolor(arrowColor).spin(-boardHue).toHexString(),
+          ] as Arrow;
+
+          arrows.push(commentArrow);
+        });
+      }
+    }
+
+    // Add arrows for analysis lines
+    // If there are comment arrows, show only the best move (first line)
+    // Otherwise, show all analysis lines
+    const linesToShow = hasCommentArrows ? lines.slice(0, 1) : lines;
+
+    linesToShow.forEach((line, index) => {
       if (line.pv && line.pv.length > 0) {
         const firstMove = line.pv[0];
         if (firstMove && firstMove.length >= 4) {
-          // First line gets full green color, subsequent lines get lighter versions
+          // When showing only best move due to comment arrows, always use full color
+          // Otherwise use the original logic with lighter colors for subsequent lines
           const baseColor = tinycolor(
             CLASSIFICATION_COLORS[MoveClassification.Best]
           ).spin(-boardHue);
 
           let lineColor: string;
-          if (index === 0) {
-            // First line - full color
+          if (hasCommentArrows || index === 0) {
+            // First line or when limiting to best move only - full color
             lineColor = baseColor.toHexString();
           } else {
             // Subsequent lines - lighter versions by mixing with white
@@ -272,7 +332,7 @@ export default function Board({
     }
 
     return arrows;
-  }, [position, showBestMoveArrow, boardHue]);
+  }, [position, showBestMoveArrow, boardHue, moveTree]);
 
   const SquareRenderer: CustomSquareRenderer = useMemo(() => {
     return getSquareRenderer({

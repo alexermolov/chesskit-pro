@@ -25,14 +25,14 @@ interface PgnToken {
  */
 export class PgnParser {
   /**
-   * Токенизирует PGN строку
+   * Tokenizes PGN string
    */
   private static tokenizePgn(pgn: string): PgnToken[] {
     const tokens: PgnToken[] = [];
     let i = 0;
 
-    // Удаляем заголовки PGN
-    const moveText = pgn.replace(/\[.*?\]\s*/g, "").trim();
+    // Remove PGN headers - only headers starting with [Name "value"]
+    const moveText = pgn.replace(/^\s*\[[^\]]*"[^"]*"\]\s*$/gm, "").trim();
 
     while (i < moveText.length) {
       const char = moveText[i];
@@ -44,18 +44,17 @@ export class PgnParser {
         tokens.push({ type: "variation_end", value: ")" });
         i++;
       } else if (char === "{") {
-        // Комментарий
+        // Comment
         let comment = "";
-        i++; // пропускаем {
+        i++; // skip {
         while (i < moveText.length && moveText[i] !== "}") {
           comment += moveText[i];
           i++;
         }
-        i++; // пропускаем }
-        // Очищаем комментарий от специальных символов и лишних пробелов
+        i++; // skip }
+        // Clean comment from excessive whitespace but keep arrows
         const cleanComment = comment
-          .replace(/\[%draw\s+arrow[^\]]*\]/g, "") // убираем стрелки
-          .replace(/\s+/g, " ") // заменяем множественные пробелы на одинарные
+          .replace(/\s+/g, " ") // replace multiple spaces with single spaces
           .trim();
         if (cleanComment) {
           tokens.push({ type: "comment", value: cleanComment });
@@ -70,10 +69,10 @@ export class PgnParser {
         }
         tokens.push({ type: "nag", value: nag });
       } else if (/\s/.test(char)) {
-        // Пропускаем пробелы
+        // Skip spaces
         i++;
       } else {
-        // Ход или результат
+        // Move or result
         let token = "";
         while (i < moveText.length && !/[\s(){}]/.test(moveText[i])) {
           token += moveText[i];
@@ -81,19 +80,19 @@ export class PgnParser {
         }
 
         if (token) {
-          // Проверяем, является ли это результатом партии
+          // Check if this is a game result
           if (["1-0", "0-1", "1/2-1/2", "*"].includes(token)) {
             tokens.push({ type: "result", value: token });
           } else if (/^\d+(\.\.\.|\.)$/.test(token)) {
-            // Это номер хода - сохраняем как отдельный токен
+            // This is a move number - save as separate token
             tokens.push({ type: "move", value: token });
           } else {
-            // Убираем номера ходов если они в начале токена (например, "1.e4" -> "e4")
+            // Remove move numbers if they are at the beginning of token (e.g., "1.e4" -> "e4")
             const cleanToken = token.replace(/^\d+(\.\.\.|\.)/, "");
             if (cleanToken) {
               tokens.push({ type: "move", value: cleanToken });
             } else if (token.match(/^\d+(\.\.\.|\.)$/)) {
-              // Если остался только номер хода, сохраняем его
+              // If only move number remains, save it
               tokens.push({ type: "move", value: token });
             }
           }
@@ -105,14 +104,14 @@ export class PgnParser {
   }
 
   /**
-   * Парсит токены в дерево ходов
+   * Parses tokens into move tree
    */
   private static parseTokensToMoveTree(tokens: PgnToken[]): MoveTree {
     let moveTree = MoveTreeUtils.createEmptyTree(DEFAULT_POSITION);
     let currentGame = new Chess();
     let currentNodeId = "root";
 
-    // Стек для обработки вариаций
+    // Stack for handling variations
     const variationStack: Array<{
       nodeId: string;
       game: Chess;
@@ -136,26 +135,26 @@ export class PgnParser {
               currentNodeId = result.nodeId;
             }
           } catch {
-            // Ошибка при попытке сделать ход - пропускаем
+            // Error when trying to make move - skip
           }
           break;
 
         case "variation_start": {
-          // ИСПРАВЛЕНО: Вариация - это альтернатива к ТЕКУЩЕМУ ходу
-          // Сохраняем текущее состояние в стек
+          // FIXED: Variation is an alternative to the CURRENT move
+          // Save current state to stack
           variationStack.push({
             nodeId: currentNodeId,
             game: new Chess(currentGame.fen()),
           });
 
-          // Восстанавливаем позицию ДО текущего хода для создания альтернативы
+          // Restore position BEFORE current move to create alternative
           const currentNode = moveTree.nodes[currentNodeId];
           if (currentNode && currentNode.parent) {
             const parentNode = moveTree.nodes[currentNode.parent];
             if (parentNode && parentNode.fen) {
               currentGame = new Chess(parentNode.fen);
             } else {
-              // Если нет FEN у родителя, восстанавливаем через историю ходов
+              // If parent has no FEN, restore through move history
               currentGame = new Chess();
               const history = this.getHistoryToNode(
                 moveTree,
@@ -165,14 +164,14 @@ export class PgnParser {
                 currentGame.move(move);
               }
             }
-            // Переходим к родительскому узлу для добавления альтернативного хода
+            // Move to parent node to add alternative move
             currentNodeId = currentNode.parent;
           }
           break;
         }
 
         case "variation_end": {
-          // Восстанавливаем состояние из стека
+          // Restore state from stack
           if (variationStack.length > 0) {
             const restored = variationStack.pop()!;
             currentNodeId = restored.nodeId;
@@ -182,11 +181,11 @@ export class PgnParser {
         }
 
         case "comment": {
-          // УЛУЧШЕНО: Более надежная обработка комментариев
+          // IMPROVED: More reliable comment handling
           if (moveTree.nodes[currentNodeId]) {
             const existingComment = moveTree.nodes[currentNodeId].comment;
             if (existingComment) {
-              // Если уже есть комментарий, добавляем новый через пробел
+              // If comment already exists, add new one with space
               moveTree.nodes[currentNodeId].comment =
                 existingComment + " " + token.value;
             } else {
@@ -197,7 +196,7 @@ export class PgnParser {
         }
 
         case "nag": {
-          // NAG поддерживается только в комментариях
+          // NAG is supported only in comments
           if (moveTree.nodes[currentNodeId]) {
             const currentComment = moveTree.nodes[currentNodeId].comment || "";
             moveTree.nodes[currentNodeId].comment = (
@@ -210,7 +209,7 @@ export class PgnParser {
         }
 
         case "result":
-          // Результат партии - можно игнорировать или сохранить
+          // Game result - can be ignored or saved
           break;
       }
     }
@@ -219,31 +218,31 @@ export class PgnParser {
   }
 
   /**
-   * Парсит PGN строку и создает дерево ходов с вариациями
+   * Parses PGN string and creates move tree with variations
    */
   static parsePgnToMoveTree(pgn: string): {
     game: Chess;
     moveTree: MoveTree;
   } {
     try {
-      // Токенизируем PGN
+      // Tokenize PGN
       const tokens = this.tokenizePgn(pgn);
 
-      // Создаем дерево из токенов
+      // Create tree from tokens
       const moveTree = this.parseTokensToMoveTree(tokens);
 
-      // Создаем игру для основной линии
+      // Create game for main line
       const game = new Chess();
       try {
         game.loadPgn(pgn);
       } catch {
-        // Ошибка загрузки PGN в Chess.js, используем пустую игру
+        // Error loading PGN in Chess.js, use empty game
       }
 
       return { game, moveTree };
     } catch (error) {
-      console.error("Ошибка парсинга PGN:", error);
-      // Возвращаем пустую игру и дерево в случае ошибки
+      console.error("PGN parsing error:", error);
+      // Return empty game and tree in case of error
       return {
         game: new Chess(),
         moveTree: MoveTreeUtils.createEmptyTree(DEFAULT_POSITION),
@@ -252,7 +251,7 @@ export class PgnParser {
   }
 
   /**
-   * Упрощенная версия для быстрого создания игры с ветками
+   * Simplified version for quickly creating game with branches
    */
   static createGameWithBranches(pgn: string): {
     game: Chess;
@@ -262,7 +261,7 @@ export class PgnParser {
   }
 
   /**
-   * Вспомогательный метод для получения истории ходов до узла
+   * Helper method to get move history to a node
    */
   private static getHistoryToNode(
     moveTree: MoveTree,
@@ -287,7 +286,48 @@ export class PgnParser {
   }
 
   /**
-   * НОВОЕ: Анализ токенов для отладки
+   * Extracts arrows from comment text
+   */
+  static extractArrowsFromComment(comment: string): Array<{
+    from: string;
+    to: string;
+    color?: string;
+  }> {
+    if (!comment) return [];
+
+    // Support both formats: [%draw arrow d5 c4 green] and [%draw arrow,d5,c4,green]
+    const arrowRegex =
+      /\[%draw\s+arrow[\s,]+([a-h][1-8])[\s,]+([a-h][1-8])(?:[\s,]+([^;\]]+))?\]/g;
+    const arrows: Array<{ from: string; to: string; color?: string }> = [];
+    let match;
+
+    while ((match = arrowRegex.exec(comment)) !== null) {
+      const [, from, to, color] = match;
+      arrows.push({
+        from,
+        to,
+        color: color?.trim() || "default",
+      });
+    }
+
+    return arrows;
+  }
+
+  /**
+   * Removes arrow annotations from comment text, leaving only text content
+   */
+  static removeArrowsFromComment(comment: string): string {
+    if (!comment) return "";
+
+    // Remove arrow annotations using the same regex as in extractArrowsFromComment
+    const arrowRegex =
+      /\[%draw\s+arrow[\s,]+([a-h][1-8])[\s,]+([a-h][1-8])(?:[\s,]+([^;\]]+))?\]/g;
+
+    return comment.replace(arrowRegex, "").trim();
+  }
+
+  /**
+   * NEW: Token analysis for debugging
    */
   static analyzeTokens(pgn: string): {
     tokens: PgnToken[];

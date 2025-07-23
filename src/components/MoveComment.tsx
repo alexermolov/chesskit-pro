@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import { useMemo, useState } from "react";
 import { Icon } from "@iconify/react";
+import { PgnParser } from "@/lib/pgnParser";
 
 interface MoveCommentProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,6 +33,13 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
       currentNodeId: moveTree.currentNodeId,
     };
   }, [moveTree]);
+
+  // Проверяем, есть ли реальный текстовый комментарий (не только стрелки)
+  const hasRealComment = useMemo(() => {
+    if (!currentComment) return false;
+    const textWithoutArrows = PgnParser.removeArrowsFromComment(currentComment);
+    return textWithoutArrows.trim().length > 0;
+  }, [currentComment]);
 
   const handleStartEdit = () => {
     setEditText(currentComment || "");
@@ -63,8 +71,8 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
     }
   };
 
-  // Показываем компонент если есть комментарий или мы в режиме редактирования
-  if (!currentComment && !isEditing) {
+  // Показываем компонент если есть реальный комментарий (не только стрелки) или мы в режиме редактирования
+  if (!hasRealComment && !isEditing) {
     // Показываем кнопку добавления комментария только если есть текущий ход
     if (!currentNodeId) return null;
 
@@ -116,7 +124,7 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
             "linear-gradient(135deg, rgba(32, 32, 32, 0.95) 0%, rgba(16, 16, 16, 0.98) 100%)",
           backdropFilter: "blur(12px)",
           color: "#4caf50",
-          padding: 3,
+          padding: 2,
           borderRadius: "0 0 16px 16px",
           boxShadow:
             "0 8px 32px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(76, 175, 80, 0.3)",
@@ -136,7 +144,7 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
         }}
       >
         {isEditing ? (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
             <TextField
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
@@ -209,7 +217,9 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
                 paddingRight: "40px", // Место для кнопки редактирования
               }}
             >
-              {currentComment}
+              {currentComment
+                ? PgnParser.removeArrowsFromComment(currentComment)
+                : ""}
             </Typography>
             <Box
               sx={{

@@ -8,7 +8,7 @@ export const CLASSIFICATION_COLORS: Record<MoveClassification, string> = {
   [MoveClassification.Forced]: "#dbac86",
   [MoveClassification.Splendid]: "#19d4af",
   [MoveClassification.Perfect]: "#3894eb",
-  [MoveClassification.Best]: "#22ac38",
+  [MoveClassification.Best]: "#3498db",
   [MoveClassification.Excellent]: "#22ac38",
   [MoveClassification.Okay]: "#74b038",
   [MoveClassification.Inaccuracy]: "#f2be1f",

@@ -1,4 +1,5 @@
 import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
+import { PgnParser } from "@/lib/pgnParser";
 import { MoveTree, MoveTreeNode, MoveTreeUtils } from "@/types/moveTree";
 import { Box, useTheme, IconButton, TextField } from "@mui/material";
 import { useMemo, useState, useCallback } from "react";
@@ -30,7 +31,6 @@ export default function BranchesMovesPanel() {
 
     return pgn;
   }, [moveTree]);
-
   return (
     <Box
       sx={{
@@ -109,6 +109,56 @@ function PgnDisplay({
     setCommentText("");
   }, []);
 
+  // Function to format comment with arrows
+  const formatCommentWithArrows = useCallback((commentText: string) => {
+    const arrows = PgnParser.extractArrowsFromComment(commentText);
+
+    if (arrows.length === 0) {
+      return commentText;
+    }
+
+    let formattedText = commentText;
+
+    // Use the original regex from PgnParser to find and replace arrows
+    const arrowRegex =
+      /\[%draw\s+arrow[\s,]+([a-h][1-8])[\s,]+([a-h][1-8])(?:[\s,]+([^;\]]+))?\]/g;
+
+    formattedText = formattedText.replace(arrowRegex, (_, from, to, color) => {
+      let colorIcon = "";
+      const normalizedColor = color?.toLowerCase()?.trim() || "default";
+
+      switch (normalizedColor) {
+        case "red":
+        case "r":
+          colorIcon = "🔴";
+          break;
+        case "green":
+        case "g":
+          colorIcon = "🟢";
+          break;
+        case "blue":
+        case "b":
+          colorIcon = "🔵";
+          break;
+        case "yellow":
+        case "y":
+          colorIcon = "🟡";
+          break;
+        case "orange":
+        case "o":
+          colorIcon = "🟠";
+          break;
+        default:
+          colorIcon = "➤";
+          break;
+      }
+
+      return `${colorIcon} ${from}→${to}`;
+    });
+
+    return formattedText;
+  }, []);
+
   // Функция для поиска nodeId последнего хода перед комментарием
   const findNodeIdForComment = useCallback(
     (commentIndex: number, tokens: string[]): string | null => {
@@ -167,7 +217,10 @@ function PgnDisplay({
     function tokenizePgn(pgnText: string): string[] {
       const tokens: string[] = [];
       let i = 0;
-      const cleanPgn = pgnText.replace(/\[.*?\]\s*/g, "").trim();
+      // Remove only PGN headers with quotes, not arrows
+      const cleanPgn = pgnText
+        .replace(/^\s*\[[^\]]*"[^"]*"\]\s*$/gm, "")
+        .trim();
 
       while (i < cleanPgn.length) {
         const char = cleanPgn[i];
@@ -561,7 +614,7 @@ function PgnDisplay({
                         : undefined
                     }
                   >
-                    {`{${originalCommentText}}`}
+                    {`{${formatCommentWithArrows(originalCommentText)}}`}
                   </span>
                   {commentNodeId && (
                     <IconButton
@@ -757,6 +810,7 @@ function PgnDisplay({
     handleStartEditComment,
     handleSaveComment,
     handleCancelEdit,
+    formatCommentWithArrows,
   ]);
 
   return (
