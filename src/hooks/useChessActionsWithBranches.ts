@@ -386,6 +386,26 @@ export const useChessActionsWithBranches = (
     [moveTree, setMoveTree]
   );
 
+  // Обновление комментария к узлу
+  const updateNodeComment = useCallback(
+    (nodeId: string, comment: string | null) => {
+      setMoveTree((prevTree) => {
+        const newTree = { ...prevTree };
+        newTree.nodes = { ...prevTree.nodes };
+
+        if (newTree.nodes[nodeId]) {
+          newTree.nodes[nodeId] = {
+            ...newTree.nodes[nodeId],
+            comment: comment || undefined,
+          };
+        }
+
+        return newTree;
+      });
+    },
+    [setMoveTree]
+  );
+
   // Получение вариантов (альтернативных ходов) для текущей позиции
   const getAlternativeMoves = useCallback(() => {
     return currentNode.children.map((childId) => {
@@ -412,6 +432,7 @@ export const useChessActionsWithBranches = (
     goToBranch,
     deleteBranch,
     promoteToMainLine,
+    updateNodeComment,
 
     // Информация о состоянии
     canUndo,

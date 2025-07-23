@@ -1,50 +1,32 @@
 import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
 import { MoveTree, MoveTreeNode, MoveTreeUtils } from "@/types/moveTree";
-import { Box, useTheme } from "@mui/material";
-import { useMemo } from "react";
+import { Box, useTheme, IconButton, TextField } from "@mui/material";
+import { useMemo, useState, useCallback } from "react";
+import { Icon } from "@iconify/react";
 import { boardAtom } from "../../../states";
 
 export default function BranchesMovesPanel() {
-  const { goToNode, moveTree } = useChessActionsWithBranches(boardAtom);
+  const { goToNode, moveTree, updateNodeComment } =
+    useChessActionsWithBranches(boardAtom);
 
   // Функция для перехода к конкретному ходу по nodeId
   const handleMoveClick = (nodeId: string) => {
     goToNode(nodeId);
   };
 
+  // Функция для обновления комментария
+  const handleCommentUpdate = useCallback(
+    (nodeId: string, comment: string | null) => {
+      updateNodeComment(nodeId, comment);
+    },
+    [updateNodeComment]
+  );
+
   // Получаем правильно сформированный PGN
   const correctPgn = useMemo(() => {
     if (!moveTree) return "";
 
-    // Отладка структуры дерева
-    console.log("=== DETAILED MoveTree Debug ===");
-    console.log("Root ID:", moveTree.rootId);
-    console.log("Main Line IDs:", moveTree.mainLineIds);
-
-    // Детальная информация о каждом узле
-    Object.entries(moveTree.nodes).forEach(([id, node]) => {
-      console.log(`Node ${id}:`, {
-        san: node.san,
-        parent: node.parent,
-        children: node.children,
-        comment: node.comment,
-        move: node.move ? { san: node.move.san, color: node.move.color } : null,
-      });
-    });
-
-    // Проходим по главной линии
-    console.log("=== Main Line Traversal ===");
-    moveTree.mainLineIds.forEach((nodeId, index) => {
-      const node = moveTree.nodes[nodeId];
-      console.log(
-        `${index}: ${nodeId} -> san: "${node.san}", move: ${node.move?.san || "null"}`
-      );
-    });
-
     const pgn = MoveTreeUtils.toPgn(moveTree);
-
-    // Временная отладка для нового алгоритма
-    console.log("NEW PGN algorithm result:", JSON.stringify(pgn));
 
     return pgn;
   }, [moveTree]);
@@ -75,6 +57,7 @@ export default function BranchesMovesPanel() {
           pgn={correctPgn}
           moveTree={moveTree}
           onMoveClick={handleMoveClick}
+          onCommentUpdate={handleCommentUpdate}
           currentNodeId={moveTree?.currentNodeId || ""}
         />
       </Box>
@@ -87,6 +70,7 @@ interface PgnDisplayProps {
   pgn: string;
   moveTree: MoveTree;
   onMoveClick: (nodeId: string) => void;
+  onCommentUpdate: (nodeId: string, comment: string | null) => void;
   currentNodeId: string;
 }
 
@@ -94,9 +78,61 @@ function PgnDisplay({
   pgn,
   moveTree,
   onMoveClick,
+  onCommentUpdate,
   currentNodeId,
 }: PgnDisplayProps) {
   const theme = useTheme();
+  const [editingComment, setEditingComment] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState<string>("");
+
+  // Добавляем функции для работы с комментариями
+  const handleStartEditComment = useCallback(
+    (nodeId: string, currentComment: string) => {
+      setEditingComment(nodeId);
+      setCommentText(currentComment);
+    },
+    []
+  );
+
+  const handleSaveComment = useCallback(
+    (nodeId: string) => {
+      const trimmedComment = commentText.trim();
+      onCommentUpdate(nodeId, trimmedComment || null);
+      setEditingComment(null);
+      setCommentText("");
+    },
+    [commentText, onCommentUpdate]
+  );
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingComment(null);
+    setCommentText("");
+  }, []);
+
+  // Функция для поиска nodeId последнего хода перед комментарием
+  const findNodeIdForComment = useCallback(
+    (commentIndex: number, tokens: string[]): string | null => {
+      // Ищем последний ход перед комментарием
+      for (let i = commentIndex - 1; i >= 0; i--) {
+        const token = tokens[i];
+        if (
+          !token.startsWith("{") &&
+          !token.endsWith("}") &&
+          !/^\d+\.+$/.test(token) &&
+          token !== "(" &&
+          token !== ")"
+        ) {
+          const cleanToken = token.replace(/^\d+(\.\.\.|\.)/, "");
+          const nodeId = findNodeBySan(cleanToken, moveTree);
+          if (nodeId) {
+            return nodeId;
+          }
+        }
+      }
+      return null;
+    },
+    [moveTree]
+  );
 
   // Определяем цвета в зависимости от темы (мемоизируем)
   const colors = useMemo(
@@ -268,8 +304,11 @@ function PgnDisplay({
 
       // Комментарии в фигурных скобках
       if (token.startsWith("{") && token.endsWith("}")) {
+        // Находим nodeId последнего хода перед комментарием
+        const commentNodeId = findNodeIdForComment(index, tokens);
         moveElements.push({
           token,
+          nodeId: commentNodeId || undefined,
           isMove: false,
           index,
           isComment: true,
@@ -351,7 +390,7 @@ function PgnDisplay({
     const flushLine = () => {
       if (currentLine.length > 0) {
         result.push(
-          <div key={`line-${lineIndex++}`} style={{ marginBottom: "4px" }}>
+          <div key={`line-${lineIndex++}`} style={{ marginBottom: "2px" }}>
             {currentLine}
           </div>
         );
@@ -368,7 +407,7 @@ function PgnDisplay({
 
         // Добавляем отступы для вариаций
         const indentStyle = {
-          marginLeft: `${(indentLevel || 0) * 20}px`,
+          marginLeft: `${(indentLevel || 0) * 12}px`,
         };
 
         if (!isMove) {
@@ -386,7 +425,13 @@ function PgnDisplay({
             currentLine.push(
               <span
                 key={index}
-                style={{ color: "#666", marginRight: "4px", ...indentStyle }}
+                style={{
+                  color: theme.palette.mode === "dark" ? "#888" : "#333",
+                  marginRight: "3px",
+                  fontWeight: 600,
+                  fontSize: "0.95em",
+                  ...indentStyle,
+                }}
               >
                 {token}
               </span>
@@ -400,7 +445,7 @@ function PgnDisplay({
             currentLine.push(
               <span
                 key={index}
-                style={{ color: "#999", margin: "0 2px", ...indentStyle }}
+                style={{ color: "#999", margin: "0 1px", ...indentStyle }}
               >
                 {token}
               </span>
@@ -410,7 +455,7 @@ function PgnDisplay({
 
           if (token === ")") {
             currentLine.push(
-              <span key={index} style={{ color: "#999", margin: "0 2px" }}>
+              <span key={index} style={{ color: "#999", margin: "0 1px" }}>
                 {token}
               </span>
             );
@@ -421,26 +466,132 @@ function PgnDisplay({
 
           // Комментарии
           if (token.startsWith("{") && token.endsWith("}")) {
-            // Комментарии inline с отступом
-            currentLine.push(
-              <span
-                key={index}
-                style={{
-                  color: "#666",
-                  fontStyle: "italic",
-                  margin: "0 4px",
-                  fontSize: "0.9em",
-                  ...indentStyle,
-                }}
-              >
-                {token}
-              </span>
-            );
+            const originalCommentText = token.slice(1, -1).trim(); // убираем фигурные скобки
+            const commentNodeId = nodeId; // nodeId найден в предыдущей обработке
+
+            if (commentNodeId && editingComment === commentNodeId) {
+              // Режим редактирования
+              currentLine.push(
+                <Box
+                  key={index}
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 1,
+                    margin: "0 2px",
+                    ...indentStyle,
+                  }}
+                >
+                  <TextField
+                    size="small"
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    onKeyDown={(e) => {
+                      // Останавливаем всплытие событий для всех клавиш
+                      e.stopPropagation();
+
+                      if (e.key === "Enter" && e.ctrlKey) {
+                        handleSaveComment(commentNodeId);
+                      } else if (e.key === "Escape") {
+                        handleCancelEdit();
+                      }
+                    }}
+                    onKeyUp={(e) => {
+                      // Также останавливаем всплытие для keyUp
+                      e.stopPropagation();
+                    }}
+                    sx={{
+                      "& .MuiInputBase-root": {
+                        fontSize: "0.9em",
+                        backgroundColor:
+                          theme.palette.mode === "dark" ? "#2e2e2e" : "#f5f5f5",
+                      },
+                    }}
+                    autoFocus
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={() => handleSaveComment(commentNodeId)}
+                    sx={{ color: "#4caf50" }}
+                  >
+                    <Icon icon="mdi:check" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={handleCancelEdit}
+                    sx={{ color: "#f44336" }}
+                  >
+                    <Icon icon="mdi:close" />
+                  </IconButton>
+                </Box>
+              );
+            } else {
+              // Режим просмотра с возможностью редактирования
+              currentLine.push(
+                <Box
+                  key={index}
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    margin: "0 2px",
+                    ...indentStyle,
+                  }}
+                >
+                  <span
+                    style={{
+                      color:
+                        theme.palette.mode === "dark" ? "#4caf50" : "#2e7d32",
+                      fontStyle: "italic",
+                      fontSize: "0.9em",
+                      fontWeight: 500,
+                      cursor: commentNodeId ? "pointer" : "default",
+                    }}
+                    onClick={() => {
+                      if (commentNodeId) {
+                        handleStartEditComment(
+                          commentNodeId,
+                          originalCommentText
+                        );
+                      }
+                    }}
+                    title={
+                      commentNodeId
+                        ? "Нажмите чтобы редактировать комментарий"
+                        : undefined
+                    }
+                  >
+                    {`{${originalCommentText}}`}
+                  </span>
+                  {commentNodeId && (
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        handleStartEditComment(
+                          commentNodeId,
+                          originalCommentText
+                        )
+                      }
+                      sx={{
+                        opacity: 0.6,
+                        "&:hover": { opacity: 1 },
+                        color:
+                          theme.palette.mode === "dark" ? "#4caf50" : "#2e7d32",
+                        fontSize: "0.8rem",
+                        padding: "2px",
+                      }}
+                    >
+                      <Icon icon="mdi:pencil" style={{ fontSize: "12px" }} />
+                    </IconButton>
+                  )}
+                </Box>
+              );
+            }
             return;
           }
 
           currentLine.push(
-            <span key={index} style={{ margin: "0 1px", ...indentStyle }}>
+            <span key={index} style={{ margin: "0 0.5px", ...indentStyle }}>
               {token}
             </span>
           );
@@ -450,46 +601,139 @@ function PgnDisplay({
         // Это ход - делаем кликабельным
         if (nodeId) {
           const isCurrentMove = nodeId === currentNodeId;
+          const nodeData = moveTree.nodes[nodeId];
+          const hasComment = nodeData?.comment;
+
           currentLine.push(
-            <span
+            <Box
               key={index}
-              onClick={() => onMoveClick(nodeId)}
-              style={{
-                cursor: "pointer",
-                padding: "3px 6px",
-                borderRadius: "4px",
-                backgroundColor: isCurrentMove ? "#1976d2" : "transparent",
-                color: isCurrentMove ? "white" : colors.moveColor,
-                fontWeight: isCurrentMove ? 600 : 400,
-                margin: "1px 2px",
-                transition: "all 0.15s ease",
-                textDecoration: "none",
-                display: "inline-block",
-                whiteSpace: "nowrap",
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 0.5,
                 ...indentStyle,
               }}
-              onMouseEnter={(e) => {
-                if (!isCurrentMove) {
-                  e.currentTarget.style.backgroundColor = colors.hoverColor;
-                  e.currentTarget.style.textDecoration = "underline";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isCurrentMove) {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.textDecoration = "none";
-                }
-              }}
             >
-              {token}
-            </span>
+              <span
+                onClick={() => onMoveClick(nodeId)}
+                onDoubleClick={() => {
+                  const currentComment = hasComment || "";
+                  handleStartEditComment(nodeId, currentComment);
+                }}
+                style={{
+                  cursor: "pointer",
+                  padding: "2px 4px",
+                  borderRadius: "4px",
+                  backgroundColor: isCurrentMove ? "#1976d2" : "transparent",
+                  color: isCurrentMove ? "white" : colors.moveColor,
+                  fontWeight: isCurrentMove ? 600 : 400,
+                  margin: "1px 1px",
+                  transition: "all 0.15s ease",
+                  textDecoration: "none",
+                  display: "inline-block",
+                  whiteSpace: "nowrap",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isCurrentMove) {
+                    e.currentTarget.style.backgroundColor = colors.hoverColor;
+                    e.currentTarget.style.textDecoration = "underline";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isCurrentMove) {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                    e.currentTarget.style.textDecoration = "none";
+                  }
+                }}
+                title="Клик - перейти к ходу, Двойной клик - добавить/редактировать комментарий"
+              >
+                {token}
+              </span>
+
+              {/* Иконка для добавления комментария (только если комментария нет) */}
+              {!hasComment && (
+                <IconButton
+                  size="small"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleStartEditComment(nodeId, "");
+                  }}
+                  sx={{
+                    opacity: 0.4,
+                    "&:hover": { opacity: 1 },
+                    color: theme.palette.mode === "dark" ? "#666" : "#999",
+                    fontSize: "0.7rem",
+                    padding: "1px",
+                    marginLeft: "2px",
+                  }}
+                  title="Добавить комментарий"
+                >
+                  <Icon icon="mdi:comment-plus" style={{ fontSize: "10px" }} />
+                </IconButton>
+              )}
+
+              {/* Показываем поле ввода для нового комментария */}
+              {editingComment === nodeId && !hasComment && (
+                <Box
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 1,
+                    marginLeft: 1,
+                  }}
+                >
+                  <TextField
+                    size="small"
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    onKeyDown={(e) => {
+                      // Останавливаем всплытие событий для всех клавиш
+                      e.stopPropagation();
+
+                      if (e.key === "Enter" && e.ctrlKey) {
+                        handleSaveComment(nodeId);
+                      } else if (e.key === "Escape") {
+                        handleCancelEdit();
+                      }
+                    }}
+                    onKeyUp={(e) => {
+                      // Также останавливаем всплытие для keyUp
+                      e.stopPropagation();
+                    }}
+                    placeholder="Добавить комментарий..."
+                    sx={{
+                      "& .MuiInputBase-root": {
+                        fontSize: "0.9em",
+                        backgroundColor:
+                          theme.palette.mode === "dark" ? "#2e2e2e" : "#f5f5f5",
+                      },
+                    }}
+                    autoFocus
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={() => handleSaveComment(nodeId)}
+                    sx={{ color: "#4caf50" }}
+                  >
+                    <Icon icon="mdi:check" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={handleCancelEdit}
+                    sx={{ color: "#f44336" }}
+                  >
+                    <Icon icon="mdi:close" />
+                  </IconButton>
+                </Box>
+              )}
+            </Box>
           );
           return;
         }
 
         // Ход без nodeId - отображаем как обычный текст
         currentLine.push(
-          <span key={index} style={{ margin: "0 1px", ...indentStyle }}>
+          <span key={index} style={{ margin: "0 0.5px", ...indentStyle }}>
             {token}
           </span>
         );
@@ -500,13 +744,26 @@ function PgnDisplay({
     flushLine();
 
     return result;
-  }, [pgn, moveTree, onMoveClick, colors, currentNodeId]);
+  }, [
+    pgn,
+    moveTree,
+    onMoveClick,
+    colors,
+    currentNodeId,
+    findNodeIdForComment,
+    theme.palette.mode,
+    editingComment,
+    commentText,
+    handleStartEditComment,
+    handleSaveComment,
+    handleCancelEdit,
+  ]);
 
   return (
     <Box
       sx={{
-        lineHeight: 1.8,
-        wordSpacing: "2px",
+        lineHeight: 1.5,
+        wordSpacing: "1px",
         padding: 1,
         display: "block", // Изменено с flex на block для многострочного отображения
         alignItems: "flex-start",
