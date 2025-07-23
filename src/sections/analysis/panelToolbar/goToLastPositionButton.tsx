@@ -2,11 +2,17 @@ import { Icon } from "@iconify/react";
 import { Grid2 as Grid, IconButton, Tooltip } from "@mui/material";
 import { useAtomValue } from "jotai";
 import { boardAtom, gameAtom } from "../states";
-import { useChessActions } from "@/hooks/useChessActions";
+import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
 import { useEffect } from "react";
 
-export default function GoToLastPositionButton() {
-  const { setPgn: setBoardPgn } = useChessActions(boardAtom);
+interface GoToLastPositionButtonProps {
+  isModalOpen?: boolean;
+}
+
+export default function GoToLastPositionButton({
+  isModalOpen = false,
+}: GoToLastPositionButtonProps) {
+  const { setPgn: setBoardPgn } = useChessActionsWithBranches(boardAtom);
   const game = useAtomValue(gameAtom);
   const board = useAtomValue(boardAtom);
 
@@ -17,6 +23,11 @@ export default function GoToLastPositionButton() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      // Не обрабатываем клавиши если открыто модальное окно выбора веток
+      if (isModalOpen) {
+        return;
+      }
+
       if (e.key === "ArrowUp") {
         if (isButtonDisabled) return;
         setBoardPgn(game.pgn());
@@ -28,7 +39,7 @@ export default function GoToLastPositionButton() {
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [isButtonDisabled, setBoardPgn, game]);
+  }, [setBoardPgn, game, isButtonDisabled, isModalOpen]);
 
   return (
     <Tooltip title="Go to final position">
@@ -41,7 +52,7 @@ export default function GoToLastPositionButton() {
           disabled={isButtonDisabled}
           sx={{ paddingX: 1.2, paddingY: 0.5 }}
         >
-          <Icon icon="ri:skip-forward-line" />
+          <Icon icon="material-symbols:skip-next-outline" width={20} />
         </IconButton>
       </Grid>
     </Tooltip>

@@ -1,18 +1,19 @@
+import PrettyMoveSan from "@/components/prettyMoveSan";
+import { CLASSIFICATION_COLORS } from "@/constants";
+import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
+import { isInViewport } from "@/lib/helpers";
 import { MoveClassification } from "@/types/enums";
 import { Box, Grid2 as Grid } from "@mui/material";
 import { useAtomValue } from "jotai";
-import { boardAtom, currentPositionAtom, gameAtom } from "../../../states";
-import { useChessActions } from "@/hooks/useChessActions";
 import { useEffect } from "react";
-import { isInViewport } from "@/lib/helpers";
-import { CLASSIFICATION_COLORS } from "@/constants";
-import PrettyMoveSan from "@/components/prettyMoveSan";
+import { gameAtom, moveTreeAtom } from "../../../states";
 
 interface Props {
   san: string;
   moveClassification?: MoveClassification;
   moveIdx: number;
   moveColor: "w" | "b";
+  nodeId?: string; // ID узла в дереве ходов
 }
 
 export default function MoveItem({
@@ -20,14 +21,14 @@ export default function MoveItem({
   moveClassification,
   moveIdx,
   moveColor,
+  nodeId,
 }: Props) {
-  const game = useAtomValue(gameAtom);
-  const board = useAtomValue(boardAtom);
-  const { goToMove } = useChessActions(boardAtom);
-  const position = useAtomValue(currentPositionAtom);
+  const moveTree = useAtomValue(moveTreeAtom);
+  const { goToNode } = useChessActionsWithBranches(gameAtom);
   const color = getMoveColor(moveClassification);
 
-  const isCurrentMove = position?.currentMoveIdx === moveIdx;
+  // Определяем, является ли этот ход текущим
+  const isCurrentMove = nodeId ? moveTree.currentNodeId === nodeId : false;
 
   useEffect(() => {
     if (!isCurrentMove) return;
@@ -41,9 +42,10 @@ export default function MoveItem({
   }, [isCurrentMove, moveIdx]);
 
   const handleClick = () => {
-    if (isCurrentMove) return;
-    const gameToUse = game.moveNumber() > 1 ? game : board;
-    goToMove(moveIdx, gameToUse);
+    if (isCurrentMove || !nodeId) return;
+
+    // Переходим к узлу в дереве ходов
+    goToNode(nodeId);
   };
 
   return (

@@ -25,9 +25,10 @@ export const useBranchNavigation = (chessAtom: PrimitiveAtom<Chess>) => {
       return [];
     }
 
-    return currentNode.children
+    const branches = currentNode.children
       .map((childId) => {
         const childNode = moveTree.nodes[childId];
+        
         if (!childNode) return null;
 
         const previewMoves: Move[] = [];
@@ -52,6 +53,8 @@ export const useBranchNavigation = (chessAtom: PrimitiveAtom<Chess>) => {
         };
       })
       .filter(Boolean) as BranchOption[];
+      
+    return branches;
   }, [currentNode, moveTree.nodes]);
 
   const shouldShowBranchModal = useMemo(() => {

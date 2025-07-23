@@ -10,12 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import type { DotProps } from "recharts";
-import {
-  boardAtom,
-  currentPositionAtom,
-  gameAtom,
-  gameEvalAtom,
-} from "../../states";
+import { currentPositionAtom, gameEvalAtom } from "../../states";
 import { useCallback, useMemo } from "react";
 import type { ReactElement } from "react";
 import CustomTooltip from "./tooltip";
@@ -24,13 +19,10 @@ import { PositionEval } from "@/types/eval";
 import { CLASSIFICATION_COLORS } from "@/constants";
 import CustomDot from "./dot";
 import { MoveClassification } from "@/types/enums";
-import { useChessActions } from "@/hooks/useChessActions";
 
 export default function GraphTab(props: GridProps) {
   const gameEval = useAtomValue(gameEvalAtom);
   const currentPosition = useAtomValue(currentPositionAtom);
-  const { goToMove } = useChessActions(boardAtom);
-  const game = useAtomValue(gameAtom);
 
   const chartData: ChartItemData[] = useMemo(
     () => gameEval?.positions.map(formatEvalToChartData) ?? [],
@@ -115,8 +107,6 @@ export default function GraphTab(props: GridProps) {
                 | ChartItemData
                 | undefined;
               if (!payload) return;
-
-              goToMove(payload.moveNb, game);
             }}
             style={{ cursor: "pointer" }}
           >

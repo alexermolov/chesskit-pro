@@ -174,7 +174,7 @@ export default function PanelToolBar() {
 
         <NextMoveButton />
 
-        <GoToLastPositionButton />
+        <GoToLastPositionButton isModalOpen={isModalOpen} />
 
         <Tooltip title="Copy pgn">
           <Grid>

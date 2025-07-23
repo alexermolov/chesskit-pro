@@ -3,7 +3,6 @@ import { ListItem, Skeleton, Typography } from "@mui/material";
 import { useAtomValue } from "jotai";
 import { boardAtom } from "../../../states";
 import { getLineEvalLabel, moveLineUciToSan } from "@/lib/chess";
-import { useChessActions } from "@/hooks/useChessActions";
 import PrettyMoveSan from "@/components/prettyMoveSan";
 
 interface Props {
@@ -12,7 +11,6 @@ interface Props {
 
 export default function LineEvaluation({ line }: Props) {
   const board = useAtomValue(boardAtom);
-  const { addMoves } = useChessActions(boardAtom);
   const lineLabel = getLineEvalLabel(line);
 
   const isBlackCp =
@@ -77,9 +75,7 @@ export default function LineEvaluation({ line }: Props) {
                 color={moveColor}
                 additionalText={i < line.pv.length - 1 ? "," : ""}
                 boxProps={{
-                  onClick: () => {
-                    addMoves(line.pv.slice(0, i + 1));
-                  },
+                  onClick: () => {},
                   sx: {
                     cursor: "pointer",
                     ml: i ? 0.5 : 0,

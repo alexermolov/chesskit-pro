@@ -1,9 +1,9 @@
 import { usePlayersData } from "@/hooks/usePlayersData";
-import { Grid2 as Grid, Typography } from "@mui/material";
-import { gameAtom, gameEvalAtom } from "../../../states";
 import { MoveClassification } from "@/types/enums";
-import ClassificationRow from "./classificationRow";
+import { Grid2 as Grid, Typography } from "@mui/material";
 import { useAtomValue } from "jotai";
+import { gameAtom, gameEvalAtom } from "../../../states";
+import ClassificationRow from "./classificationRow";
 
 export default function MovesClassificationsRecap() {
   const { white, black } = usePlayersData(gameAtom);
@@ -17,10 +17,11 @@ export default function MovesClassificationsRecap() {
       justifyContent="center"
       alignItems="center"
       rowGap={0.7}
-      sx={{ scrollbarWidth: "thin", overflowY: "auto" }}
-      height="100%"
-      maxHeight="22rem"
-      size={6}
+      sx={{
+        scrollbarWidth: "thin",
+        overflowY: "auto",
+        height: "calc(100% - 10px)",
+      }}
     >
       <Grid
         container

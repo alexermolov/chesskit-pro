@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import { useChessActionsWithHistory } from "@/hooks/useChessActionsWithHistory";
 import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
+import { useBranchNavigation } from "@/hooks/useBranchNavigation";
 import { boardAtom } from "../states";
 import { useCallback, useEffect, useState } from "react";
 
@@ -20,14 +21,16 @@ export default function RedoMoveButton() {
   const { redoMove: redoLinear, canRedo: canRedoLinear } =
     useChessActionsWithHistory(boardAtom);
   const {
-    redoMove: redoBranched,
     canRedo: canRedoBranched,
     getAlternativeMoves,
     goToNode,
   } = useChessActionsWithBranches(boardAtom);
 
+  // Хук для навигации с модальным окном
+  const { redoMove: redoMoveWithModal } = useBranchNavigation(boardAtom);
+
   const canRedo = useBranches ? canRedoBranched : canRedoLinear;
-  const redoMove = useBranches ? redoBranched : redoLinear;
+  const redoMove = useBranches ? redoMoveWithModal : redoLinear;
 
   // Получаем альтернативные ходы для контекстного меню
   const alternativeMoves = useBranches ? getAlternativeMoves() : [];

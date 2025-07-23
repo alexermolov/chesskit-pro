@@ -83,7 +83,8 @@ export const useCurrentPosition = (engine: UciEngine | null) => {
 
     if (
       !position.eval &&
-      engine?.getIsReady() &&
+      engine &&
+      engine.getIsReady() &&
       engine.name &&
       !board.isCheckmate() &&
       !board.isStalemate()
@@ -92,8 +93,9 @@ export const useCurrentPosition = (engine: UciEngine | null) => {
         fen: string,
         setPartialEval?: (positionEval: PositionEval) => void
       ) => {
-        if (!engine.getIsReady()) {
-          throw new Error("Engine not ready");
+        if (!engine || !engine.getIsReady()) {
+          console.warn("Engine not ready for position evaluation");
+          return null;
         }
         const savedEval = savedEvals[fen];
         if (
@@ -126,47 +128,61 @@ export const useCurrentPosition = (engine: UciEngine | null) => {
       };
 
       const getPositionEval = async () => {
-        const setPartialEval = (positionEval: PositionEval) => {
-          setCurrentPosition({ ...position, eval: positionEval });
-        };
-        const rawPositionEval = await getFenEngineEval(
-          board.fen(),
-          setPartialEval
-        );
+        try {
+          if (!engine || !engine.getIsReady()) {
+            console.warn("Engine not ready for position evaluation");
+            return;
+          }
 
-        if (boardHistory.length === 0) return;
-
-        const params = getEvaluateGameParams(board);
-        const fens = params.fens.slice(board.turn() === "w" ? -3 : -4);
-        const uciMoves = params.uciMoves.slice(board.turn() === "w" ? -2 : -3);
-
-        const lastRawEval = await getFenEngineEval(fens.slice(-2)[0]);
-        const rawPositions: PositionEval[] = fens.map((_, idx) => {
-          if (idx === fens.length - 2) return lastRawEval;
-          if (idx === fens.length - 1) return rawPositionEval;
-          return {
-            lines: [
-              {
-                pv: [],
-                depth: 0,
-                multiPv: 1,
-                cp: 1,
-              },
-            ],
+          const setPartialEval = (positionEval: PositionEval) => {
+            setCurrentPosition({ ...position, eval: positionEval });
           };
-        });
+          const rawPositionEval = await getFenEngineEval(
+            board.fen(),
+            setPartialEval
+          );
 
-        const positionsWithMoveClassification = getMovesClassification(
-          rawPositions,
-          uciMoves,
-          fens
-        );
+          if (!rawPositionEval || boardHistory.length === 0) return;
 
-        setCurrentPosition({
-          ...position,
-          eval: positionsWithMoveClassification.slice(-1)[0],
-          lastEval: positionsWithMoveClassification.slice(-2)[0],
-        });
+          const params = getEvaluateGameParams(board);
+          const fens = params.fens.slice(board.turn() === "w" ? -3 : -4);
+          const uciMoves = params.uciMoves.slice(
+            board.turn() === "w" ? -2 : -3
+          );
+
+          const lastRawEval = await getFenEngineEval(fens.slice(-2)[0]);
+          const rawPositions: PositionEval[] = fens
+            .map((_, idx) => {
+              if (idx === fens.length - 2) return lastRawEval;
+              if (idx === fens.length - 1) return rawPositionEval;
+              return {
+                lines: [
+                  {
+                    pv: [],
+                    depth: 0,
+                    multiPv: 1,
+                    cp: 1,
+                  },
+                ],
+              };
+            })
+            .filter(Boolean) as PositionEval[];
+
+          const positionsWithMoveClassification = getMovesClassification(
+            rawPositions,
+            uciMoves,
+            fens
+          );
+
+          setCurrentPosition({
+            ...position,
+            eval: positionsWithMoveClassification.slice(-1)[0],
+            lastEval: positionsWithMoveClassification.slice(-2)[0],
+          });
+        } catch (error) {
+          console.error("Error evaluating position:", error);
+          // Не устанавливаем eval при ошибке
+        }
       };
 
       getPositionEval();

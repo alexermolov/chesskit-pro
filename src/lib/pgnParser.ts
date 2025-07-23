@@ -16,7 +16,12 @@ interface PgnToken {
 }
 
 /**
- * Парсер PGN с поддержкой вариаций для создания дерева ходов
+ * Исправленный парсер PGN с поддержкой вариаций для создания дерева ходов
+ *
+ * Основные исправления:
+ * 1. Правильная обработка вариаций - не откатываем ход при variation_start
+ * 2. Улучшенная обработка комментариев
+ * 3. Более надежное восстановление позиций через FEN
  */
 export class PgnParser {
   /**
@@ -47,7 +52,14 @@ export class PgnParser {
           i++;
         }
         i++; // пропускаем }
-        tokens.push({ type: "comment", value: comment.trim() });
+        // Очищаем комментарий от специальных символов и лишних пробелов
+        const cleanComment = comment
+          .replace(/\[%draw\s+arrow[^\]]*\]/g, "") // убираем стрелки
+          .replace(/\s+/g, " ") // заменяем множественные пробелы на одинарные
+          .trim();
+        if (cleanComment) {
+          tokens.push({ type: "comment", value: cleanComment });
+        }
       } else if (char === "$") {
         // NAG (Numeric Annotation Glyph)
         let nag = "$";
@@ -72,11 +84,17 @@ export class PgnParser {
           // Проверяем, является ли это результатом партии
           if (["1-0", "0-1", "1/2-1/2", "*"].includes(token)) {
             tokens.push({ type: "result", value: token });
+          } else if (/^\d+(\.\.\.|\.)$/.test(token)) {
+            // Это номер хода - сохраняем как отдельный токен
+            tokens.push({ type: "move", value: token });
           } else {
-            // Удаляем номера ходов (например, "1.", "23...")
-            const cleanToken = token.replace(/^\d+\.+/, "");
+            // Убираем номера ходов если они в начале токена (например, "1.e4" -> "e4")
+            const cleanToken = token.replace(/^\d+(\.\.\.|\.)/, "");
             if (cleanToken) {
               tokens.push({ type: "move", value: cleanToken });
+            } else if (token.match(/^\d+(\.\.\.|\.)$/)) {
+              // Если остался только номер хода, сохраняем его
+              tokens.push({ type: "move", value: token });
             }
           }
         }
@@ -123,26 +141,32 @@ export class PgnParser {
           break;
 
         case "variation_start": {
+          // ИСПРАВЛЕНО: Вариация - это альтернатива к ТЕКУЩЕМУ ходу
           // Сохраняем текущее состояние в стек
           variationStack.push({
             nodeId: currentNodeId,
             game: new Chess(currentGame.fen()),
           });
 
-          // Возвращаемся к предыдущему ходу для создания вариации
-          const parentNode = moveTree.nodes[currentNodeId];
-          if (parentNode && parentNode.parent) {
-            currentNodeId = parentNode.parent;
-            // Простое восстановление - откатываем один ход
-            try {
-              currentGame.undo();
-            } catch {
-              // Если не можем откатить, восстанавливаем позицию через FEN
-              const parentNodeData = moveTree.nodes[currentNodeId];
-              if (parentNodeData && parentNodeData.fen) {
-                currentGame = new Chess(parentNodeData.fen);
+          // Восстанавливаем позицию ДО текущего хода для создания альтернативы
+          const currentNode = moveTree.nodes[currentNodeId];
+          if (currentNode && currentNode.parent) {
+            const parentNode = moveTree.nodes[currentNode.parent];
+            if (parentNode && parentNode.fen) {
+              currentGame = new Chess(parentNode.fen);
+            } else {
+              // Если нет FEN у родителя, восстанавливаем через историю ходов
+              currentGame = new Chess();
+              const history = this.getHistoryToNode(
+                moveTree,
+                currentNode.parent
+              );
+              for (const move of history) {
+                currentGame.move(move);
               }
             }
+            // Переходим к родительскому узлу для добавления альтернативного хода
+            currentNodeId = currentNode.parent;
           }
           break;
         }
@@ -158,9 +182,16 @@ export class PgnParser {
         }
 
         case "comment": {
-          // Добавляем комментарий к текущему узлу
+          // УЛУЧШЕНО: Более надежная обработка комментариев
           if (moveTree.nodes[currentNodeId]) {
-            moveTree.nodes[currentNodeId].comment = token.value;
+            const existingComment = moveTree.nodes[currentNodeId].comment;
+            if (existingComment) {
+              // Если уже есть комментарий, добавляем новый через пробел
+              moveTree.nodes[currentNodeId].comment =
+                existingComment + " " + token.value;
+            } else {
+              moveTree.nodes[currentNodeId].comment = token.value;
+            }
           }
           break;
         }
@@ -169,8 +200,11 @@ export class PgnParser {
           // NAG поддерживается только в комментариях
           if (moveTree.nodes[currentNodeId]) {
             const currentComment = moveTree.nodes[currentNodeId].comment || "";
-            moveTree.nodes[currentNodeId].comment =
-              currentComment + " " + token.value;
+            moveTree.nodes[currentNodeId].comment = (
+              currentComment +
+              " " +
+              token.value
+            ).trim();
           }
           break;
         }
@@ -225,5 +259,55 @@ export class PgnParser {
     moveTree: MoveTree;
   } {
     return this.parsePgnToMoveTree(pgn);
+  }
+
+  /**
+   * Вспомогательный метод для получения истории ходов до узла
+   */
+  private static getHistoryToNode(
+    moveTree: MoveTree,
+    nodeId: string
+  ): string[] {
+    const history: string[] = [];
+    let currentId = nodeId;
+
+    while (currentId !== "root") {
+      const node = moveTree.nodes[currentId];
+      if (node && node.move) {
+        history.unshift(node.move.san);
+      }
+      if (node && node.parent) {
+        currentId = node.parent;
+      } else {
+        break;
+      }
+    }
+
+    return history;
+  }
+
+  /**
+   * НОВОЕ: Анализ токенов для отладки
+   */
+  static analyzeTokens(pgn: string): {
+    tokens: PgnToken[];
+    stats: {
+      moves: number;
+      variations: number;
+      comments: number;
+      nags: number;
+      results: number;
+    };
+  } {
+    const tokens = this.tokenizePgn(pgn);
+    const stats = {
+      moves: tokens.filter((t) => t.type === "move").length,
+      variations: tokens.filter((t) => t.type === "variation_start").length,
+      comments: tokens.filter((t) => t.type === "comment").length,
+      nags: tokens.filter((t) => t.type === "nag").length,
+      results: tokens.filter((t) => t.type === "result").length,
+    };
+
+    return { tokens, stats };
   }
 }

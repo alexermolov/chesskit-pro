@@ -60,7 +60,8 @@ export const useChessActionsWithBranches = (
     }
 
     const timeSinceLastManualOp = Date.now() - lastManualOperationRef.current;
-    if (timeSinceLastManualOp < 1000) {
+    if (timeSinceLastManualOp < 2000) {
+      // Увеличили до 2 секунд
       return;
     }
 
@@ -70,9 +71,22 @@ export const useChessActionsWithBranches = (
       moveTree.currentNodeId
     ).length;
 
-    // Синхронизируем только если в игре больше ходов чем в дереве
-    if (gameHistoryMoves.length > treeMovesCount) {
-      const newMoves = gameHistoryMoves.slice(treeMovesCount);
+    // Получаем общее количество ходов в дереве (от корня до самого дальнего узла)
+    const allTreeMoves = MoveTreeUtils.getMovesToNode(
+      moveTree,
+      moveTree.mainLineIds[moveTree.mainLineIds.length - 1]
+    );
+
+    // Синхронизируем только если:
+    // 1. В игре больше ходов чем в дереве И
+    // 2. Дерево не пустое (чтобы избежать дублирования при загрузке PGN) И
+    // 3. Игра содержит больше ходов чем есть всего в дереве (а не только до текущего узла)
+    if (
+      gameHistoryMoves.length > treeMovesCount &&
+      treeMovesCount > 0 &&
+      gameHistoryMoves.length > allTreeMoves.length
+    ) {
+      const newMoves = gameHistoryMoves.slice(allTreeMoves.length);
       let currentTree = moveTree;
       let hasChanges = false;
 
@@ -132,25 +146,27 @@ export const useChessActionsWithBranches = (
   const setPgn = useCallback(
     (pgn: string) => {
       setIsManualTreeOperation(true);
+      lastManualOperationRef.current = Date.now();
 
       // Используем новый парсер с поддержкой веток
       const { game: parsedGame, moveTree: newTree } =
         PgnParser.parsePgnToMoveTree(pgn);
 
-      // Создаем новую игру и восстанавливаем позицию до начала
-      const newGame = new Chess();
-      const headers = parsedGame.getHeaders();
-      Object.entries(headers).forEach(([key, value]) => {
-        if (value) newGame.setHeader(key, value);
-      });
+      // Копируем заголовки и устанавливаем всю игру (включая ходы)
+      setGame(parsedGame);
 
-      // Устанавливаем дерево с currentNodeId на корневой узел для правильного выделения
+      // Находим последний ход в главной линии для правильного выделения
+      // Берем последний ID из mainLineIds (если есть ходы) или rootId
+      const lastNodeId =
+        newTree.mainLineIds.length > 1
+          ? newTree.mainLineIds[newTree.mainLineIds.length - 1]
+          : newTree.rootId;
+
       const correctedTree = {
         ...newTree,
-        currentNodeId: newTree.rootId,
+        currentNodeId: lastNodeId,
       };
 
-      setGame(newGame);
       setMoveTree(correctedTree);
     },
     [setGame, setMoveTree]
@@ -259,14 +275,16 @@ export const useChessActionsWithBranches = (
     setIsManualTreeOperation(true);
     lastManualOperationRef.current = Date.now();
 
-    const newTree = MoveTreeUtils.goToNode(moveTree, currentNode.parent);
-    setMoveTree(newTree);
+    const parentNodeId = currentNode.parent;
+    const newTree = MoveTreeUtils.goToNode(moveTree, parentNodeId);
+    const newGame = reconstructGameFromTree(parentNodeId);
 
-    const newGame = reconstructGameFromTree(currentNode.parent);
+    // Обновляем состояние в правильном порядке
+    setMoveTree(newTree);
     setGame(newGame);
 
-    // Воспроизводим звук предыдущего хода
-    const parentNode = moveTree.nodes[currentNode.parent];
+    // Воспроизводим звук хода, на который мы переходим (если это не корень)
+    const parentNode = moveTree.nodes[parentNodeId];
     if (parentNode?.move) {
       playSoundFromMove(parentNode.move);
     }
@@ -289,9 +307,10 @@ export const useChessActionsWithBranches = (
     // Выбираем первого ребенка (главную линию) или позволяем выбрать
     const nextNodeId = currentNode.children[0];
     const newTree = MoveTreeUtils.goToNode(moveTree, nextNodeId);
-    setMoveTree(newTree);
-
     const newGame = reconstructGameFromTree(nextNodeId);
+
+    // Обновляем состояние в правильном порядке
+    setMoveTree(newTree);
     setGame(newGame);
 
     const nextMove = moveTree.nodes[nextNodeId]?.move;
@@ -314,9 +333,10 @@ export const useChessActionsWithBranches = (
       lastManualOperationRef.current = Date.now();
 
       const newTree = MoveTreeUtils.goToNode(moveTree, nodeId);
-      setMoveTree(newTree);
-
       const newGame = reconstructGameFromTree(nodeId);
+
+      // Обновляем состояние в правильном порядке
+      setMoveTree(newTree);
       setGame(newGame);
 
       const targetNode = moveTree.nodes[nodeId];

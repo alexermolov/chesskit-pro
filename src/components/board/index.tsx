@@ -1,5 +1,5 @@
 import { CLASSIFICATION_COLORS } from "@/constants";
-import { useChessActions } from "@/hooks/useChessActions";
+import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
 import { Color, MoveClassification } from "@/types/enums";
 import { CurrentPosition } from "@/types/eval";
 import { Player } from "@/types/game";
@@ -51,7 +51,7 @@ export default function Board({
 }: Props) {
   const boardRef = useRef<HTMLDivElement>(null);
   const game = useAtomValue(gameAtom);
-  const { playMove } = useChessActions(gameAtom);
+  const { playMove } = useChessActionsWithBranches(gameAtom);
   const clickedSquaresAtom = useMemo(() => atom<Square[]>([]), []);
   const setClickedSquares = useSetAtom(clickedSquaresAtom);
   const playableSquaresAtom = useMemo(() => atom<Square[]>([]), []);

@@ -11,6 +11,7 @@ import { useAtomValue } from "jotai";
 import { boardAtom, gameAtom } from "../states";
 import { useChessActionsWithHistory } from "@/hooks/useChessActionsWithHistory";
 import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
+import { useBranchNavigation } from "@/hooks/useBranchNavigation";
 import { useCallback, useEffect, useState } from "react";
 
 export default function NextMoveButton() {
@@ -25,11 +26,13 @@ export default function NextMoveButton() {
   } = useChessActionsWithHistory(boardAtom);
 
   const {
-    redoMove: redoBranched,
     canRedo: canRedoBranched,
     getAlternativeMoves,
     goToNode,
   } = useChessActionsWithBranches(boardAtom);
+
+  // Хук для навигации с модальным окном
+  const { redoMove: redoMoveWithModal } = useBranchNavigation(boardAtom);
 
   const game = useAtomValue(gameAtom);
   const board = useAtomValue(boardAtom);
@@ -43,7 +46,7 @@ export default function NextMoveButton() {
     gameHistory.slice(0, boardHistory.length).join() === boardHistory.join();
 
   const canRedo = useBranches ? canRedoBranched : canRedoLinear;
-  const redoMove = useBranches ? redoBranched : redoLinear;
+  const redoMove = useBranches ? redoMoveWithModal : redoLinear;
 
   // Получаем альтернативные ходы для контекстного меню
   const alternativeMoves = useBranches ? getAlternativeMoves() : [];

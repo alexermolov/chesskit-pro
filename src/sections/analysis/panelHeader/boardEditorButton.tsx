@@ -1,5 +1,5 @@
 import BoardEditorModal from "@/components/BoardEditorModal";
-import { useChessActions } from "@/hooks/useChessActions";
+import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
 import { Icon } from "@iconify/react";
 import { IconButton, Tooltip } from "@mui/material";
 import { useAtom, useSetAtom } from "jotai";
@@ -16,8 +16,8 @@ export default function BoardEditorButton() {
   const [open, setOpen] = useState(false);
   const [board] = useAtom(boardAtom);
 
-  const { reset: resetBoard } = useChessActions(boardAtom);
-  const { reset: resetGame } = useChessActions(gameAtom);
+  const { reset: resetBoard } = useChessActionsWithBranches(boardAtom);
+  const { reset: resetGame } = useChessActionsWithBranches(gameAtom);
   const setEval = useSetAtom(gameEvalAtom);
   const setCurrentPosition = useSetAtom(currentPositionAtom);
   const setEvaluationProgress = useSetAtom(evaluationProgressAtom);

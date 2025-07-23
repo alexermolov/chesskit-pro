@@ -1,5 +1,5 @@
 import NavLink from "@/components/NavLink";
-import { useChessActions } from "@/hooks/useChessActions";
+import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
 import {
   boardAtom,
   currentPositionAtom,
@@ -29,8 +29,8 @@ export default function NavBar({ darkMode, switchDarkMode }: Props) {
   const router = useRouter();
 
   // Chess game reset functionality
-  const { reset: resetGame } = useChessActions(gameAtom);
-  const { reset: resetBoard } = useChessActions(boardAtom);
+  const { reset: resetGame } = useChessActionsWithBranches(gameAtom);
+  const { reset: resetBoard } = useChessActionsWithBranches(boardAtom);
   const setEval = useSetAtom(gameEvalAtom);
   const setCurrentPosition = useSetAtom(currentPositionAtom);
   const setEvaluationProgress = useSetAtom(evaluationProgressAtom);

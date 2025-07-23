@@ -1,11 +1,10 @@
 import { CLASSIFICATION_COLORS } from "@/constants";
-import { useChessActions } from "@/hooks/useChessActions";
 import { capitalize } from "@/lib/helpers";
 import { Color, MoveClassification } from "@/types/enums";
 import { Box, Grid2 as Grid, Typography } from "@mui/material";
 import { useAtomValue } from "jotai";
 import { useMemo } from "react";
-import { boardAtom, gameAtom, gameEvalAtom } from "../../../states";
+import { boardAtom, gameEvalAtom } from "../../../states";
 
 interface Props {
   classification: MoveClassification;
@@ -14,8 +13,6 @@ interface Props {
 export default function ClassificationRow({ classification }: Props) {
   const gameEval = useAtomValue(gameEvalAtom);
   const board = useAtomValue(boardAtom);
-  const game = useAtomValue(gameAtom);
-  const { goToMove } = useChessActions(boardAtom);
 
   const whiteNb = useMemo(() => {
     if (!gameEval) return 0;
@@ -55,14 +52,14 @@ export default function ClassificationRow({ classification }: Props) {
     );
 
     if (nextPositionIdx > 0) {
-      goToMove(nextPositionIdx, game);
+      console.log("Navigate to move", nextPositionIdx);
     } else {
       const firstPositionIdx = gameEval.positions.findIndex(
         (position, idx) =>
           filterColor(idx) && position.moveClassification === classification
       );
       if (firstPositionIdx > 0 && firstPositionIdx !== moveIdx) {
-        goToMove(firstPositionIdx, game);
+        console.log("Navigate to move", firstPositionIdx);
       }
     }
   };

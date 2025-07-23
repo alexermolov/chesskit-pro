@@ -232,72 +232,168 @@ export class MoveTreeUtils {
 
   // Convert move tree to PGN string with branches
   static toPgn(tree: MoveTree): string {
-    // Recursive function to build PGN with proper branch order
-    const buildPgn = (nodeId: string, depth: number = 0): string[] => {
-      const node = tree.nodes[nodeId];
-      if (!node) return [];
+    const result: string[] = [];
 
-      const result: string[] = [];
+    // Функция для подсчета номера хода на основе пути от корня
+    const getMoveNumber = (nodeId: string): number => {
+      let currentId = nodeId;
+      let moveCount = 0;
 
-      // If this is a move (not root), add it
-      if (node.move) {
-        const moveNumber = Math.floor((depth - 1) / 2) + 1;
-        const isWhite = (depth - 1) % 2 === 0;
-
-        // Check if this node is an alternative move
-        const isAlternativeMove =
-          node.parent &&
-          tree.nodes[node.parent] &&
-          tree.nodes[node.parent].children.indexOf(node.id) > 0;
-
-        // Add move number
-        if (isWhite) {
-          result.push(`${moveNumber}.`);
-        } else if (isAlternativeMove) {
-          // For black moves that are alternatives
-          result.push(`${moveNumber}...`);
+      while (currentId && currentId !== tree.rootId) {
+        const node = tree.nodes[currentId];
+        if (node && node.move) {
+          moveCount++;
         }
-        // For black moves in main line, don't add number
-
-        result.push(node.san);
+        currentId = node?.parent || "";
       }
 
-      // If there are children, process them
-      if (node.children.length > 0) {
-        // First child - main line
-        const mainChild = node.children[0];
-
-        // Continue main line
-        const mainMoves = buildPgn(mainChild, depth + 1);
-        result.push(...mainMoves);
-
-        // AFTER main line add alternative branches
-        for (let i = 1; i < node.children.length; i++) {
-          const altChild = node.children[i];
-          result.push("(");
-
-          // Recursively build alternative branch
-          const altMoves = buildPgn(altChild, depth + 1);
-          result.push(...altMoves);
-
-          result.push(")");
-        }
-      }
-
-      return result;
+      return Math.ceil(moveCount / 2);
     };
 
-    // Start from root
-    const allMoves = buildPgn(tree.rootId);
+    // Функция для определения цвета хода
+    const isWhiteMove = (nodeId: string): boolean => {
+      let currentId = nodeId;
+      let moveCount = 0;
 
-    // Добавляем завершающий символ если есть ходы
-    if (allMoves.length > 0) {
-      allMoves.push("*");
+      while (currentId && currentId !== tree.rootId) {
+        const node = tree.nodes[currentId];
+        if (node && node.move) {
+          moveCount++;
+        }
+        currentId = node?.parent || "";
+      }
+
+      return moveCount % 2 === 1;
+    };
+
+    const processNode = (
+      nodeId: string,
+      skipMove: boolean = false,
+      isFirstInVariation: boolean = false,
+      insideVariation: boolean = false
+    ): void => {
+      const node = tree.nodes[nodeId];
+      if (!node) return;
+
+      // Добавляем ход (кроме корня и если не пропускаем)
+      if (node.move && !skipMove) {
+        const moveNumber = getMoveNumber(nodeId);
+        const isWhite = isWhiteMove(nodeId);
+
+        // Логика нумерации:
+        // 1. Первый ход вариации - всегда с номером
+        // 2. Белые ходы - всегда с номером
+        // 3. Черные ходы - только когда нужен контекст (первый в вариации или после белого)
+        // 4. В основной линии черные ходы без номера
+
+        // Проверяем, нужно ли черному ходу добавить номер
+        // В PGN черным ходам номера нужны только когда контекст неясен
+        const parentNode = node.parent ? tree.nodes[node.parent] : null;
+        const parentIsWhite = parentNode ? isWhiteMove(parentNode.id) : true;
+
+        const needsBlackNumber =
+          !isWhite &&
+          (isFirstInVariation || // первый ход в вариации всегда с номером
+            (insideVariation && parentIsWhite)); // черный ход в вариации после белого
+
+        if (isFirstInVariation) {
+          if (isWhite) {
+            result.push(`${moveNumber}.${node.san}`);
+          } else {
+            result.push(`${moveNumber}...${node.san}`);
+          }
+        } else if (isWhite) {
+          result.push(`${moveNumber}.${node.san}`);
+        } else if (needsBlackNumber) {
+          result.push(`${moveNumber}...${node.san}`);
+        } else {
+          result.push(node.san);
+        }
+
+        // Добавляем комментарий если есть
+        if (node.comment) {
+          result.push(`{${node.comment}}`);
+        }
+      }
+
+      // Если нет детей - конец ветки
+      if (node.children.length === 0) {
+        return;
+      }
+
+      // Если один ребенок - просто продолжаем
+      if (node.children.length === 1) {
+        processNode(node.children[0], false, false, insideVariation);
+        return;
+      }
+
+      // Если несколько детей - есть вариации
+      // Определяем главного ребенка
+      let mainChild: string | null = null;
+      const variations: string[] = [];
+
+      const currentMainIndex = tree.mainLineIds.indexOf(nodeId);
+      if (
+        currentMainIndex !== -1 &&
+        currentMainIndex + 1 < tree.mainLineIds.length
+      ) {
+        const nextMainLineId = tree.mainLineIds[currentMainIndex + 1];
+        if (node.children.includes(nextMainLineId)) {
+          mainChild = nextMainLineId;
+          variations.push(
+            ...node.children.filter((childId) => childId !== nextMainLineId)
+          );
+        }
+      }
+
+      // Если не нашли в основной линии, берем первого ребенка как основного
+      if (!mainChild) {
+        mainChild = node.children[0];
+        variations.push(...node.children.slice(1));
+      }
+
+      // 1. Сначала добавляем ход основной линии
+      const mainChildNode = tree.nodes[mainChild];
+      if (mainChildNode && mainChildNode.move) {
+        const moveNumber = getMoveNumber(mainChild);
+        const isWhite = isWhiteMove(mainChild);
+
+        // Основная линия - номер только для белых
+        if (isWhite) {
+          result.push(`${moveNumber}.${mainChildNode.san}`);
+        } else {
+          // Черные ходы в основной линии всегда без номера
+          result.push(mainChildNode.san);
+        }
+
+        // Добавляем комментарий если есть
+        if (mainChildNode.comment) {
+          result.push(`{${mainChildNode.comment}}`);
+        }
+      }
+
+      // 2. Сразу обрабатываем все вариации
+      for (const variationId of variations) {
+        result.push("(");
+        processNode(variationId, false, true, true); // первый ход вариации, внутри вариации
+        result.push(")");
+      }
+
+      // 3. Потом продолжаем с детей основной линии (пропуская сам ход, так как уже добавили)
+      if (mainChildNode) {
+        processNode(mainChild, true, false, false); // возвращаемся к основной линии
+      }
+    };
+
+    // Начинаем с корня
+    processNode(tree.rootId, false, false, false);
+
+    // Добавляем символ окончания
+    if (result.length > 0) {
+      result.push("*");
     }
 
-    return allMoves
-      .join(" ")
-      .replace(/(\d+)\. /g, "$1.")
-      .replace(/(\d+)\.\.\. /g, "$1...");
+    // Объединяем в строку
+    return result.join(" ");
   }
 }

@@ -1,18 +1,18 @@
-import LoadGameButtonWithPgn from "../../loadGame/loadGameButtonWithPgn";
-import { useCallback, useEffect } from "react";
 import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
+import { useGameDatabase } from "@/hooks/useGameDatabase";
+import { decodeBase64 } from "@/lib/helpers";
+import { Game } from "@/types/game";
+import { Chess } from "chess.js";
+import { useAtomValue, useSetAtom } from "jotai";
+import { useRouter } from "next/router";
+import { useCallback, useEffect } from "react";
+import LoadGameButtonWithPgn from "../../loadGame/loadGameButtonWithPgn";
 import {
   boardOrientationAtom,
   evaluationProgressAtom,
   gameAtom,
   gameEvalAtom,
 } from "../states";
-import { useGameDatabase } from "@/hooks/useGameDatabase";
-import { useAtomValue, useSetAtom } from "jotai";
-import { Chess } from "chess.js";
-import { useRouter } from "next/router";
-import { decodeBase64 } from "@/lib/helpers";
-import { Game } from "@/types/game";
 
 export default function LoadGame() {
   const router = useRouter();

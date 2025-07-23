@@ -374,8 +374,6 @@ export class UciEngine {
       setPartialEval(parsedResults);
     };
 
-    // console.log(`Evaluating position: ${fen}`); // Отключено для продакшена
-
     const lichessEval = await lichessEvalPromise;
     if (
       lichessEval.lines.length >= multiPv &&
@@ -403,8 +401,6 @@ export class UciEngine {
 
     await this.stopAllCurrentJobs();
     await this.setElo(elo);
-
-    // console.log(`Evaluating position: ${fen}`); // Отключено для продакшена
 
     const results = await this.sendCommands(
       [`position fen ${fen}`, `go depth ${depth}`],
