@@ -89,7 +89,10 @@ function PgnDisplay({
   const handleStartEditComment = useCallback(
     (nodeId: string, currentComment: string) => {
       setEditingComment(nodeId);
-      setCommentText(currentComment);
+      // Показываем только текстовую часть, убираем стрелки и часы для редактирования
+      const textOnly =
+        PgnParser.removeClockAndArrowsFromComment(currentComment);
+      setCommentText(textOnly);
     },
     []
   );
@@ -97,11 +100,35 @@ function PgnDisplay({
   const handleSaveComment = useCallback(
     (nodeId: string) => {
       const trimmedComment = commentText.trim();
-      onCommentUpdate(nodeId, trimmedComment || null);
+
+      // Получаем текущий комментарий узла
+      const currentNode = moveTree.nodes[nodeId];
+      const currentComment = currentNode?.comment || "";
+
+      // Извлекаем существующие стрелки и часы
+      const existingArrows = PgnParser.extractArrowsFromComment(currentComment);
+      const existingClock = PgnParser.extractClockFromComment(currentComment);
+
+      // Комбинируем новый текст с существующими аннотациями
+      let finalComment = trimmedComment;
+
+      // Добавляем стрелки
+      existingArrows.forEach((arrow) => {
+        finalComment += ` [%draw arrow,${arrow.from},${arrow.to}${
+          arrow.color ? `,${arrow.color}` : ""
+        }]`;
+      });
+
+      // Добавляем часы
+      if (existingClock) {
+        finalComment += ` [%clk ${existingClock}]`;
+      }
+
+      onCommentUpdate(nodeId, finalComment.trim() || null);
       setEditingComment(null);
       setCommentText("");
     },
-    [commentText, onCommentUpdate]
+    [commentText, onCommentUpdate, moveTree]
   );
 
   const handleCancelEdit = useCallback(() => {
@@ -114,7 +141,8 @@ function PgnDisplay({
     const arrows = PgnParser.extractArrowsFromComment(commentText);
 
     if (arrows.length === 0) {
-      return commentText;
+      // Even if no arrows, still remove clock annotations and empty braces
+      return PgnParser.removeClockAndArrowsFromComment(commentText);
     }
 
     let formattedText = commentText;
@@ -155,6 +183,9 @@ function PgnDisplay({
 
       return `${colorIcon} ${from}→${to}`;
     });
+
+    // Use the PgnParser function to properly remove clock annotations and empty braces
+    formattedText = PgnParser.removeClockAndArrowsFromComment(formattedText);
 
     return formattedText;
   }, []);
@@ -241,7 +272,16 @@ function PgnDisplay({
           }
           comment += "}"; // добавляем закрывающую скобку
           i++; // пропускаем }
-          tokens.push(comment);
+
+          // Проверяем, останется ли что-то в комментарии после удаления аннотаций
+          const commentContent = comment.slice(1, -1); // убираем фигурные скобки
+          const cleanedContent =
+            PgnParser.removeClockAndArrowsFromComment(commentContent);
+
+          // Добавляем токен только если есть реальное содержимое
+          if (cleanedContent.trim().length > 0) {
+            tokens.push(comment);
+          }
         } else if (char === "$") {
           // NAG
           let nag = "$";
@@ -657,6 +697,12 @@ function PgnDisplay({
           const nodeData = moveTree.nodes[nodeId];
           const hasComment = nodeData?.comment;
 
+          // Проверяем, есть ли реальный текстовый комментарий (не только часы и стрелки)
+          const hasRealComment =
+            hasComment &&
+            PgnParser.removeClockAndArrowsFromComment(hasComment).trim()
+              .length > 0;
+
           currentLine.push(
             <Box
               key={index}
@@ -703,8 +749,8 @@ function PgnDisplay({
                 {token}
               </span>
 
-              {/* Иконка для добавления комментария (только если комментария нет) */}
-              {!hasComment && (
+              {/* Иконка для добавления комментария (только если реального комментария нет) */}
+              {!hasRealComment && (
                 <IconButton
                   size="small"
                   onClick={(e) => {
@@ -726,7 +772,7 @@ function PgnDisplay({
               )}
 
               {/* Показываем поле ввода для нового комментария */}
-              {editingComment === nodeId && !hasComment && (
+              {editingComment === nodeId && !hasRealComment && (
                 <Box
                   sx={{
                     display: "inline-flex",

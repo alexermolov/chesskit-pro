@@ -34,11 +34,12 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
     };
   }, [moveTree]);
 
-  // Проверяем, есть ли реальный текстовый комментарий (не только стрелки)
+  // Проверяем, есть ли реальный текстовый комментарий (не только стрелки и часы)
   const hasRealComment = useMemo(() => {
     if (!currentComment) return false;
-    const textWithoutArrows = PgnParser.removeArrowsFromComment(currentComment);
-    return textWithoutArrows.trim().length > 0;
+    const textWithoutArrowsAndClock =
+      PgnParser.removeClockAndArrowsFromComment(currentComment);
+    return textWithoutArrowsAndClock.trim().length > 0;
   }, [currentComment]);
 
   const handleStartEdit = () => {
@@ -71,7 +72,7 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
     }
   };
 
-  // Показываем компонент если есть реальный комментарий (не только стрелки) или мы в режиме редактирования
+  // Показываем компонент если есть реальный комментарий (не только стрелки и часы) или мы в режиме редактирования
   if (!hasRealComment && !isEditing) {
     // Показываем кнопку добавления комментария только если есть текущий ход
     if (!currentNodeId) return null;
@@ -82,7 +83,7 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
           sx={{
             position: "absolute",
             top: 8,
-            right: 8,
+            left: 8,
             zIndex: 10,
           }}
         >
@@ -218,7 +219,7 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
               }}
             >
               {currentComment
-                ? PgnParser.removeArrowsFromComment(currentComment)
+                ? PgnParser.removeClockAndArrowsFromComment(currentComment)
                 : ""}
             </Typography>
             <Box

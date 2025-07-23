@@ -327,6 +327,41 @@ export class PgnParser {
   }
 
   /**
+   * Extracts clock time from comment text
+   */
+  static extractClockFromComment(comment: string): string | null {
+    if (!comment) return null;
+
+    // Match clock format like [%clk 0:09:57.6] or [%clk 1:30:45]
+    const clockRegex = /\[%clk\s+(\d+:\d{2}:\d{2}(?:\.\d+)?)\]/;
+    const match = comment.match(clockRegex);
+
+    return match ? match[1] : null;
+  }
+
+  /**
+   * Removes clock annotations and arrows from comment text, leaving only text content
+   */
+  static removeClockAndArrowsFromComment(comment: string): string {
+    if (!comment) return "";
+
+    // Remove both arrow and clock annotations
+    const arrowRegex =
+      /\[%draw\s+arrow[\s,]+([a-h][1-8])[\s,]+([a-h][1-8])(?:[\s,]+([^;\]]+))?\]/g;
+    const clockRegex = /\[%clk\s+\d+:\d{2}:\d{2}(?:\.\d+)?\]/g;
+
+    let result = comment.replace(arrowRegex, "").replace(clockRegex, "").trim();
+
+    // Remove empty braces and normalize whitespace
+    result = result
+      .replace(/\{\s*\}/g, "") // Remove empty braces
+      .replace(/\s+/g, " ") // Replace multiple spaces with single space
+      .trim();
+
+    return result;
+  }
+
+  /**
    * NEW: Token analysis for debugging
    */
   static analyzeTokens(pgn: string): {

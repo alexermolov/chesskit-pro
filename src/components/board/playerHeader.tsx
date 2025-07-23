@@ -6,6 +6,8 @@ import { PrimitiveAtom, useAtomValue } from "jotai";
 import { Chess } from "chess.js";
 import { useMemo } from "react";
 import { getPaddedNumber } from "@/lib/helpers";
+import { moveTreeAtom } from "@/sections/analysis/states";
+import { PgnParser } from "@/lib/pgnParser";
 
 export interface Props {
   player: Player;
@@ -15,10 +17,30 @@ export interface Props {
 
 export default function PlayerHeader({ color, player, gameAtom }: Props) {
   const game = useAtomValue(gameAtom);
+  const moveTree = useAtomValue(moveTreeAtom);
 
   const gameFen = game.fen();
 
   const clock = useMemo(() => {
+    // First try to get clock from moveTree (for analysis mode)
+    if (moveTree && moveTree.currentNodeId) {
+      const currentNode = moveTree.nodes[moveTree.currentNodeId];
+      if (currentNode?.comment) {
+        const clockString = PgnParser.extractClockFromComment(
+          currentNode.comment
+        );
+        if (clockString && currentNode.move) {
+          // In analysis mode, show clock for the player who made the current move
+          const moveColor =
+            currentNode.move.color === "w" ? Color.White : Color.Black;
+          if (moveColor === color) {
+            return getClock(`[%clk ${clockString}]`);
+          }
+        }
+      }
+    }
+
+    // Fallback to original logic for regular games
     const turn = game.turn();
 
     if (turn === color) {
@@ -34,7 +56,7 @@ export default function PlayerHeader({ color, player, gameAtom }: Props) {
 
     const comment = game.getComment();
     return getClock(comment);
-  }, [game, color]);
+  }, [game, color, moveTree]);
 
   return (
     <Grid
