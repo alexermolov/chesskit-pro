@@ -360,17 +360,7 @@ function PgnDisplay({
     };
 
     moveElements.forEach(
-      ({
-        token,
-        nodeId,
-        isMove,
-        index,
-        isVariationStart,
-        isVariationEnd,
-        isComment,
-        needsNewLine,
-        indentLevel,
-      }) => {
+      ({ token, nodeId, isMove, index, needsNewLine, indentLevel }) => {
         // Добавляем перенос строки если нужно
         if (needsNewLine && currentLine.length > 0) {
           flushLine();
@@ -385,10 +375,7 @@ function PgnDisplay({
           // Не ход - отображаем как обычный текст
           if (token === "*") {
             currentLine.push(
-              <span
-                key={index}
-                style={{ color: "#666", marginLeft: "4px", ...indentStyle }}
-              >
+              <span key={index} style={{ color: "#666", ...indentStyle }}>
                 {token}
               </span>
             );

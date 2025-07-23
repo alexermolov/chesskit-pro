@@ -1,9 +1,9 @@
-import { Box, Typography, Fade } from "@mui/material";
-import { useAtomValue } from "jotai";
 import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
+import { Box, Fade, Typography } from "@mui/material";
 import { useMemo } from "react";
 
 interface MoveCommentProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   gameAtom: any;
 }
 

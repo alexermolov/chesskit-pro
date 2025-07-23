@@ -1,4 +1,4 @@
-import { Grid2Props as GridProps, Tab, Tabs, Box } from "@mui/material";
+import { Box, Grid2Props as GridProps, Tab, Tabs } from "@mui/material";
 import { useAtomValue } from "jotai";
 import { useState } from "react";
 import { gameEvalAtom } from "../../states";
@@ -12,7 +12,7 @@ export default function ClassificationTab(props: GridProps) {
 
   const [activeTab, setActiveTab] = useState(0);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 

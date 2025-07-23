@@ -1,7 +1,7 @@
-import { useState, useCallback, useMemo } from "react";
-import { useChessActionsWithBranches } from "./useChessActionsWithBranches";
-import { PrimitiveAtom } from "jotai";
 import { Chess, Move } from "chess.js";
+import { PrimitiveAtom } from "jotai";
+import { useCallback, useMemo, useState } from "react";
+import { useChessActionsWithBranches } from "./useChessActionsWithBranches";
 
 interface BranchOption {
   nodeId: string;
@@ -28,7 +28,7 @@ export const useBranchNavigation = (chessAtom: PrimitiveAtom<Chess>) => {
     const branches = currentNode.children
       .map((childId) => {
         const childNode = moveTree.nodes[childId];
-        
+
         if (!childNode) return null;
 
         const previewMoves: Move[] = [];
@@ -53,7 +53,7 @@ export const useBranchNavigation = (chessAtom: PrimitiveAtom<Chess>) => {
         };
       })
       .filter(Boolean) as BranchOption[];
-      
+
     return branches;
   }, [currentNode, moveTree.nodes]);
 

@@ -1,4 +1,11 @@
+import Board from "@/components/board";
+import MoveComment from "@/components/MoveComment";
+import { usePlayersData } from "@/hooks/usePlayersData";
+import { useScreenSize } from "@/hooks/useScreenSize";
+import { Color } from "@/types/enums";
+import { Box } from "@mui/material";
 import { useAtomValue } from "jotai";
+import { useMemo } from "react";
 import {
   boardAtom,
   boardOrientationAtom,
@@ -7,13 +14,6 @@ import {
   showBestMoveArrowAtom,
   showPlayerMoveIconAtom,
 } from "../states";
-import { useMemo } from "react";
-import { useScreenSize } from "@/hooks/useScreenSize";
-import { Color } from "@/types/enums";
-import Board from "@/components/board";
-import { usePlayersData } from "@/hooks/usePlayersData";
-import { Box } from "@mui/material";
-import MoveComment from "@/components/MoveComment";
 
 export default function BoardContainer() {
   const screenSize = useScreenSize();
@@ -37,7 +37,7 @@ export default function BoardContainer() {
     <Box sx={{ position: "relative" }}>
       {/* Комментарий к текущему ходу */}
       <MoveComment gameAtom={boardAtom} />
-      
+
       {/* Доска */}
       <Board
         id="AnalysisBoard"
