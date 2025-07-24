@@ -138,6 +138,8 @@ function PgnDisplay({
 
   // Function to format comment with arrows
   const formatCommentWithArrows = useCallback((commentText: string) => {
+    console.log(commentText);
+
     const arrows = PgnParser.extractArrowsFromComment(commentText);
 
     if (arrows.length === 0) {
@@ -273,13 +275,15 @@ function PgnDisplay({
           comment += "}"; // добавляем закрывающую скобку
           i++; // пропускаем }
 
-          // Проверяем, останется ли что-то в комментарии после удаления аннотаций
+          // Проверяем содержимое комментария
           const commentContent = comment.slice(1, -1); // убираем фигурные скобки
+          const hasArrows =
+            PgnParser.extractArrowsFromComment(commentContent).length > 0;
           const cleanedContent =
             PgnParser.removeClockAndArrowsFromComment(commentContent);
 
-          // Добавляем токен только если есть реальное содержимое
-          if (cleanedContent.trim().length > 0) {
+          // Добавляем токен если есть реальное содержимое ИЛИ стрелки
+          if (cleanedContent.trim().length > 0 || hasArrows) {
             tokens.push(comment);
           }
         } else if (char === "$") {
@@ -772,7 +776,7 @@ function PgnDisplay({
               )}
 
               {/* Показываем поле ввода для нового комментария */}
-              {editingComment === nodeId && !hasRealComment && (
+              {editingComment === nodeId && (
                 <Box
                   sx={{
                     display: "inline-flex",

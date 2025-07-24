@@ -1,5 +1,12 @@
+import { CLASSIFICATION_COLORS } from "@/constants";
+import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
+import { MoveClassification } from "@/types/enums";
+import { PositionEval } from "@/types/eval";
 import { Box, Grid2 as Grid, Grid2Props as GridProps } from "@mui/material";
 import { useAtomValue } from "jotai";
+import type { ReactElement } from "react";
+import { useCallback, useMemo } from "react";
+import type { DotProps } from "recharts";
 import {
   Area,
   AreaChart,
@@ -9,18 +16,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { DotProps } from "recharts";
-import { currentPositionAtom, gameEvalAtom } from "../../states";
-import { useCallback, useMemo } from "react";
-import type { ReactElement } from "react";
+import { boardAtom, currentPositionAtom, gameEvalAtom } from "../../states";
+import CustomDot from "./dot";
 import CustomTooltip from "./tooltip";
 import { ChartItemData } from "./types";
-import { PositionEval } from "@/types/eval";
-import { CLASSIFICATION_COLORS } from "@/constants";
-import CustomDot from "./dot";
-import { MoveClassification } from "@/types/enums";
 
 export default function GraphTab(props: GridProps) {
+  const { getMainLineMoves, goToNode } = useChessActionsWithBranches(boardAtom);
   const gameEval = useAtomValue(gameEvalAtom);
   const currentPosition = useAtomValue(currentPositionAtom);
 
@@ -106,7 +108,12 @@ export default function GraphTab(props: GridProps) {
               const payload = e?.activePayload?.[0]?.payload as
                 | ChartItemData
                 | undefined;
+
               if (!payload) return;
+
+              const mainLineMoves = getMainLineMoves();
+              const node = mainLineMoves[payload.moveNb - 1];
+              goToNode(node.nodeId);
             }}
             style={{ cursor: "pointer" }}
           >

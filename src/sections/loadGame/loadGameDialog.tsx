@@ -1,5 +1,6 @@
 import { useGameDatabase } from "@/hooks/useGameDatabase";
 import { getGameFromPgn } from "@/lib/chess";
+import { MultiGamePgnParser } from "@/lib/multiGamePgnParser";
 import { GameOrigin } from "@/types/enums";
 import {
   MenuItem,
@@ -25,6 +26,10 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import LichessInput from "./lichessInput";
 import { useSetAtom } from "jotai";
 import { boardOrientationAtom } from "../analysis/states";
+import {
+  createGameInfoFromPgn,
+  gamesListAtom,
+} from "../analysis/states/gamesListState";
 
 interface Props {
   open: boolean;
@@ -45,27 +50,61 @@ export default function NewGameDialog({
     GameOrigin.ChessCom
   );
   const [parsingError, setParsingError] = useState("");
+  const [multiGameMessage, setMultiGameMessage] = useState("");
   const parsingErrorTimeout = useRef<NodeJS.Timeout | null>(null);
+  const messageTimeout = useRef<NodeJS.Timeout | null>(null);
   const setBoardOrientation = useSetAtom(boardOrientationAtom);
+  const setGamesList = useSetAtom(gamesListAtom);
   const { addGame } = useGameDatabase();
 
   const handleAddGame = async (pgn: string, boardOrientation?: boolean) => {
     if (!pgn) return;
 
     try {
-      if (setPgnCallback) {
-        // Используем setPgn для сохранения веток
-        setSentryContext("loadedGame", { pgn });
-        await setPgnCallback(pgn);
-      } else {
-        // Используем старый метод с Chess объектом
-        const gameToAdd = getGameFromPgn(pgn);
-        setSentryContext("loadedGame", { pgn });
+      // Проверяем, содержит ли PGN несколько игр
+      const games = MultiGamePgnParser.parseMultiGamePgn(pgn);
 
-        if (setGame) {
+      if (games.length > 1) {
+        // Если найдено несколько игр, сохраняем их в список и загружаем первую
+        const gameInfos = games
+          .map((game, index) => createGameInfoFromPgn(game.pgn, index))
+          .filter(Boolean);
+
+        setGamesList(gameInfos as any);
+
+        // Показываем сообщение о том, что загружено несколько игр
+        if (messageTimeout.current) {
+          clearTimeout(messageTimeout.current);
+        }
+
+        setMultiGameMessage(
+          `${games.length} games loaded. All games are available in the Games tab.`
+        );
+
+        messageTimeout.current = setTimeout(() => {
+          setMultiGameMessage("");
+        }, 5000);
+
+        // Загружаем первую игру как активную
+        if (setPgnCallback) {
+          setSentryContext("loadedGame", { pgn: games[0].pgn });
+          await setPgnCallback(games[0].pgn);
+        } else if (setGame) {
+          const gameToAdd = getGameFromPgn(games[0].pgn);
+          setSentryContext("loadedGame", { pgn: games[0].pgn });
+          await setGame(gameToAdd);
+        }
+      } else {
+        // Если только одна игра, обрабатываем как обычно
+        if (setPgnCallback) {
+          setSentryContext("loadedGame", { pgn });
+          await setPgnCallback(pgn);
+        } else if (setGame) {
+          const gameToAdd = getGameFromPgn(pgn);
+          setSentryContext("loadedGame", { pgn });
           await setGame(gameToAdd);
         } else {
-          await addGame(gameToAdd);
+          await addGame(getGameFromPgn(pgn));
         }
       }
 
@@ -93,8 +132,12 @@ export default function NewGameDialog({
   const handleClose = () => {
     setPgn("");
     setParsingError("");
+    setMultiGameMessage("");
     if (parsingErrorTimeout.current) {
       clearTimeout(parsingErrorTimeout.current);
+    }
+    if (messageTimeout.current) {
+      clearTimeout(messageTimeout.current);
     }
     onClose();
   };
@@ -170,6 +213,17 @@ export default function NewGameDialog({
               sx={{ width: "100%" }}
             >
               {parsingError}
+            </Alert>
+          </Snackbar>
+
+          <Snackbar open={!!multiGameMessage}>
+            <Alert
+              onClose={() => setMultiGameMessage("")}
+              severity="success"
+              variant="filled"
+              sx={{ width: "100%" }}
+            >
+              {multiGameMessage}
             </Alert>
           </Snackbar>
         </Grid>

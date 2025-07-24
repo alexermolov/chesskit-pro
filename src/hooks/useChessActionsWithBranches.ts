@@ -1,12 +1,12 @@
 import { setGameHeaders } from "@/lib/chess";
+import { PgnParser } from "@/lib/pgnParser";
 import { playIllegalMoveSound, playSoundFromMove } from "@/lib/sounds";
+import { moveTreeAtom } from "@/sections/analysis/states";
 import { Player } from "@/types/game";
-import { MoveTreeUtils, BranchInfo } from "@/types/moveTree";
+import { BranchInfo, MoveTreeNode, MoveTreeUtils } from "@/types/moveTree";
 import { Chess, DEFAULT_POSITION, Move } from "chess.js";
 import { PrimitiveAtom, useAtom } from "jotai";
-import { useCallback, useState, useMemo, useEffect, useRef } from "react";
-import { moveTreeAtom } from "@/sections/analysis/states";
-import { PgnParser } from "@/lib/pgnParser";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export interface resetGameParams {
   fen?: string;
@@ -418,6 +418,23 @@ export const useChessActionsWithBranches = (
     });
   }, [currentNode, moveTree.nodes]);
 
+  const getMainLineMoves = useCallback(() => {
+    const mainLineMoves: Array<{ san: string; nodeId: string }> = [];
+
+    if (moveTree && moveTree.nodes && moveTree.rootId) {
+      let currentId: string | null = moveTree.rootId;
+      while (currentId) {
+        const node = (moveTree.nodes[currentId] || null) as MoveTreeNode;
+        if (!node) break;
+        if (node.move) {
+          mainLineMoves.push({ san: node.move.san, nodeId: currentId });
+        }
+        currentId = node.children[0] || null;
+      }
+    }
+    return mainLineMoves;
+  }, [moveTree]);
+
   return {
     // Базовые операции
     setPgn,
@@ -445,6 +462,7 @@ export const useChessActionsWithBranches = (
     // Утилиты
     getAlternativeMoves,
     reconstructGameFromTree,
+    getMainLineMoves,
 
     // Совместимость с линейной версией
     moveHistory: currentMoves,

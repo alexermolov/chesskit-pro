@@ -4,6 +4,7 @@ import { useState } from "react";
 import { gameEvalAtom } from "../../states";
 import MovesClassificationsRecap from "./movesClassificationsRecap";
 import MovesPanel from "./movesPanel";
+import GamesPanel from "./gamesPanel";
 
 export default function ClassificationTab(props: GridProps) {
   const gameEval = useAtomValue(gameEvalAtom);
@@ -25,11 +26,19 @@ export default function ClassificationTab(props: GridProps) {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        width: "100%",
         ...props.sx,
       }}
     >
       {/* Табы - всегда сверху */}
-      <Box sx={{ borderBottom: 1, borderColor: "divider", flexShrink: 0 }}>
+      <Box
+        sx={{
+          borderBottom: 1,
+          borderColor: "divider",
+          flexShrink: 0,
+          width: "100%",
+        }}
+      >
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
@@ -41,13 +50,16 @@ export default function ClassificationTab(props: GridProps) {
             id="moves-tab-0"
             aria-controls="moves-tabpanel-0"
           />
-          {hasClassifications && (
-            <Tab
-              label="Classification"
-              id="classification-tab-1"
-              aria-controls="classification-tabpanel-1"
-            />
-          )}
+          <Tab
+            label="Classification"
+            id="classification-tab-1"
+            aria-controls="classification-tabpanel-1"
+          />
+          <Tab
+            label="Games"
+            id="games-tab-2"
+            aria-controls="games-tabpanel-2"
+          />
         </Tabs>
       </Box>
 
@@ -68,20 +80,43 @@ export default function ClassificationTab(props: GridProps) {
         </Box>
 
         {/* Таб с классификацией */}
-        {hasClassifications && (
-          <Box
-            role="tabpanel"
-            hidden={activeTab !== 1}
-            id="classification-tabpanel-1"
-            aria-labelledby="classification-tab-1"
-            sx={{
-              height: "100%",
-              display: activeTab === 1 ? "block" : "none",
-            }}
-          >
+        <Box
+          role="tabpanel"
+          hidden={activeTab !== 1}
+          id="classification-tabpanel-1"
+          aria-labelledby="classification-tab-1"
+          sx={{
+            height: "100%",
+            display: activeTab === 1 ? "block" : "none",
+          }}
+        >
+          {hasClassifications ? (
             <MovesClassificationsRecap />
-          </Box>
-        )}
+          ) : (
+            <Box sx={{ p: 3, textAlign: "center" }}>
+              <Box sx={{ mb: 2, color: "text.secondary" }}>
+                Classification data is not available yet.
+              </Box>
+              <Box sx={{ color: "text.secondary", fontSize: "0.9rem" }}>
+                Run the engine analysis to see move classifications.
+              </Box>
+            </Box>
+          )}
+        </Box>
+
+        {/* Таб с играми */}
+        <Box
+          role="tabpanel"
+          hidden={activeTab !== 2}
+          id="games-tabpanel-2"
+          aria-labelledby="games-tab-2"
+          sx={{
+            height: "100%",
+            display: activeTab === 2 ? "block" : "none",
+          }}
+        >
+          <GamesPanel />
+        </Box>
       </Box>
     </Box>
   );

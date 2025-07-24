@@ -59,11 +59,6 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
     setEditText("");
   };
 
-  const handleAddComment = () => {
-    setEditText("");
-    setIsEditing(true);
-  };
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && e.ctrlKey) {
       handleSave();
@@ -72,11 +67,11 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
     }
   };
 
-  // Показываем компонент если есть реальный комментарий (не только стрелки и часы) или мы в режиме редактирования
-  if (!hasRealComment && !isEditing) {
-    // Показываем кнопку добавления комментария только если есть текущий ход
-    if (!currentNodeId) return null;
+  // Показываем кнопку карандаша (редактирования) всегда, если есть текущий ход
+  if (!currentNodeId) return null;
 
+  // Если нет комментария и не в режиме редактирования, показываем только иконку карандаша
+  if (!hasRealComment && !isEditing) {
     return (
       <Fade in={true} timeout={300}>
         <Box
@@ -87,9 +82,9 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
             zIndex: 10,
           }}
         >
-          <Tooltip title="Добавить комментарий">
+          <Tooltip title="Добавить/редактировать комментарий">
             <IconButton
-              onClick={handleAddComment}
+              onClick={handleStartEdit}
               sx={{
                 backgroundColor: "rgba(76, 175, 80, 0.1)",
                 color: "#4caf50",
@@ -100,11 +95,7 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
               }}
               size="small"
             >
-              <Icon
-                icon="material-symbols:comment-add"
-                width="18"
-                height="18"
-              />
+              <Icon icon="material-symbols:edit" width="18" height="18" />
             </IconButton>
           </Tooltip>
         </Box>

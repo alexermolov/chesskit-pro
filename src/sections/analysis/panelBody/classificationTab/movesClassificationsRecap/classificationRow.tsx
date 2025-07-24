@@ -1,4 +1,5 @@
 import { CLASSIFICATION_COLORS } from "@/constants";
+import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
 import { capitalize } from "@/lib/helpers";
 import { Color, MoveClassification } from "@/types/enums";
 import { Box, Grid2 as Grid, Typography } from "@mui/material";
@@ -13,6 +14,7 @@ interface Props {
 export default function ClassificationRow({ classification }: Props) {
   const gameEval = useAtomValue(gameEvalAtom);
   const board = useAtomValue(boardAtom);
+  const { getMainLineMoves, goToNode } = useChessActionsWithBranches(boardAtom);
 
   const whiteNb = useMemo(() => {
     if (!gameEval) return 0;
@@ -51,15 +53,19 @@ export default function ClassificationRow({ classification }: Props) {
         idx > moveIdx
     );
 
+    const mainLineMoves = getMainLineMoves();
+
     if (nextPositionIdx > 0) {
-      console.log("Navigate to move", nextPositionIdx);
+      const node = mainLineMoves[nextPositionIdx - 1];
+      goToNode(node.nodeId);
     } else {
       const firstPositionIdx = gameEval.positions.findIndex(
         (position, idx) =>
           filterColor(idx) && position.moveClassification === classification
       );
       if (firstPositionIdx > 0 && firstPositionIdx !== moveIdx) {
-        console.log("Navigate to move", firstPositionIdx);
+        const node = mainLineMoves[firstPositionIdx];
+        goToNode(node.nodeId);
       }
     }
   };

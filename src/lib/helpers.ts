@@ -26,3 +26,18 @@ export const decodeBase64 = (encoded: string | null): string | null => {
     return null;
   }
 };
+
+/**
+ * Форматирует дату в локализованный строковый формат
+ */
+export const formatDate = (date: Date): string => {
+  try {
+    return new Intl.DateTimeFormat("en-GB", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }).format(date);
+  } catch {
+    return "--:--:--";
+  }
+};

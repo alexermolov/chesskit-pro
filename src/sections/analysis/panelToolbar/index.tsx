@@ -69,6 +69,41 @@ export default function PanelToolBar() {
     return game.pgn();
   }, [moveTree, game]);
 
+  // Функция для скачивания PGN файла
+  const downloadPgn = useCallback(() => {
+    const pgn = getPgnWithBranches();
+    if (!pgn) return;
+
+    // Получаем данные заголовков для формирования имени файла
+    const headers = game.getHeaders();
+    let fileName = "game.pgn";
+
+    // Пытаемся сформировать более информативное имя файла из заголовков
+    if (headers.White && headers.Black && headers.Date) {
+      const date = headers.Date.replace(/\./g, "-").split("?")[0]; // Убираем вопросы из даты
+      fileName = `${headers.White} vs ${headers.Black} ${date}.pgn`;
+    } else if (headers.Event) {
+      fileName = `${headers.Event}.pgn`;
+    }
+
+    // Создаем объект Blob с текстом PGN
+    const blob = new Blob([pgn], { type: "text/plain" });
+
+    // Создаем временную ссылку для скачивания
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+
+    // Добавляем ссылку в DOM, запускаем клик и удаляем
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    // Освобождаем URL
+    URL.revokeObjectURL(url);
+  }, [getPgnWithBranches, game]);
+
   const handleUndoMove = useCallback(() => {
     if (canUndo) {
       undoMove();
@@ -176,7 +211,7 @@ export default function PanelToolBar() {
 
         <GoToLastPositionButton isModalOpen={isModalOpen} />
 
-        <Tooltip title="Copy pgn">
+        <Tooltip title="Copy PGN">
           <Grid>
             <IconButton
               disabled={
@@ -189,6 +224,21 @@ export default function PanelToolBar() {
               sx={{ paddingX: 1.2, paddingY: 0.5 }}
             >
               <Icon icon="ri:clipboard-line" />
+            </IconButton>
+          </Grid>
+        </Tooltip>
+
+        <Tooltip title="Download PGN">
+          <Grid>
+            <IconButton
+              disabled={
+                game.history().length === 0 &&
+                Object.keys(moveTree.nodes).length <= 1
+              }
+              onClick={downloadPgn}
+              sx={{ paddingX: 1.2, paddingY: 0.5 }}
+            >
+              <Icon icon="ri:download-line" />
             </IconButton>
           </Grid>
         </Tooltip>
