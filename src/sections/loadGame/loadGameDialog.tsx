@@ -70,6 +70,7 @@ export default function NewGameDialog({
           .map((game, index) => createGameInfoFromPgn(game.pgn, index))
           .filter(Boolean);
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setGamesList(gameInfos as any);
 
         // Показываем сообщение о том, что загружено несколько игр

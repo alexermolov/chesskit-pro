@@ -80,7 +80,7 @@ export class MultiGamePgnParser {
    */
   static parseMultiGamePgnWithMoveTrees(pgn: string): Array<{
     game: Chess;
-    moveTree: any;
+    moveTree: unknown;
     headers: Record<string, string>;
   }> {
     const pgnGames = this.parseMultiGamePgn(pgn);
