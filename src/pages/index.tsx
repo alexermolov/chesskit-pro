@@ -29,8 +29,7 @@ export default function GameAnalysis() {
   const isLgOrGreater = useMediaQuery(theme.breakpoints.up("lg"));
   const router = useRouter();
 
-  const { tempGamesList, loadTempGame, getTempGameById } =
-    useTempGamesManager();
+  const { loadTempGame, getTempGameById } = useTempGamesManager();
   const gameEval = useAtomValue(boardAtom);
   const [game] = useAtom(gameAtom);
   const [board, setBoard] = useAtom(boardAtom);

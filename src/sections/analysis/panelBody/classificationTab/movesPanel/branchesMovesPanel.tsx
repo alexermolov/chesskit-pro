@@ -1,9 +1,9 @@
 import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
 import { PgnParser } from "@/lib/pgnParser";
 import { MoveTree, MoveTreeNode, MoveTreeUtils } from "@/types/moveTree";
-import { Box, useTheme, IconButton, TextField } from "@mui/material";
-import { useMemo, useState, useCallback } from "react";
 import { Icon } from "@iconify/react";
+import { Box, IconButton, TextField, useTheme } from "@mui/material";
+import { useCallback, useMemo, useState } from "react";
 import { boardAtom } from "../../../states";
 
 export default function BranchesMovesPanel() {
@@ -422,8 +422,8 @@ function PgnDisplay({
       let moveNumber = null;
 
       if (moveNumberMatch) {
-        moveNumber = moveNumberMatch[1] + moveNumberMatch[2]; // "1." или "1..."
-        displayToken = moveNumberMatch[3] || moveNumber; // ход или номер если нет хода
+        moveNumber = (moveNumberMatch[1] + moveNumberMatch[2]) as any; // "1." или "1..."
+        displayToken = (moveNumberMatch[3] || moveNumber) as any; // ход или номер если нет хода
       }
 
       // Если есть номер хода, добавляем его как отдельный элемент

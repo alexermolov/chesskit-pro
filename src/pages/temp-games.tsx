@@ -237,18 +237,15 @@ export default function TempGamesList() {
   );
 
   const handleRowEditStart = useCallback(
-    (params: GridRowParams, event: MuiEvent) => {
+    (_: GridRowParams, event: MuiEvent) => {
       event.defaultMuiPrevented = true;
     },
     []
   );
 
-  const handleRowEditStop = useCallback(
-    (params: GridRowParams, event: MuiEvent) => {
-      event.defaultMuiPrevented = true;
-    },
-    []
-  );
+  const handleRowEditStop = useCallback((_: GridRowParams, event: MuiEvent) => {
+    event.defaultMuiPrevented = true;
+  }, []);
 
   const columns: GridColDef[] = useMemo(
     () => [
