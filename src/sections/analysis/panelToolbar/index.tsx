@@ -16,10 +16,12 @@ import { Move } from "chess.js";
 import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useState } from "react";
 import { boardAtom, gameAtom, moveTreeAtom } from "../states";
+import AddToTempListButton from "./addToTempListButton";
 import FlipBoardButton from "./flipBoardButton";
 import GoToLastPositionButton from "./goToLastPositionButton";
 import NextMoveButton from "./nextMoveButton";
 import RedoMoveButton from "./redoMoveButton";
+import SaveAndNewButton from "./saveAndNewButton";
 import SaveButton from "./saveButton";
 
 export default function PanelToolBar() {
@@ -244,6 +246,10 @@ export default function PanelToolBar() {
         </Tooltip>
 
         <SaveButton />
+
+        <SaveAndNewButton />
+
+        <AddToTempListButton />
       </Grid>
 
       {/* Контекстное меню для истории ходов */}

@@ -1,11 +1,12 @@
 import { PageTitle } from "@/components/pageTitle";
+import { useTempGamesManager } from "@/hooks/useTempGamesManager";
 import Board from "@/sections/analysis/board";
 import AnalysisTab from "@/sections/analysis/panelBody/analysisTab";
 import ClassificationTab from "@/sections/analysis/panelBody/classificationTab";
 import GraphTab from "@/sections/analysis/panelBody/graphTab";
 import PanelHeader from "@/sections/analysis/panelHeader";
 import PanelToolBar from "@/sections/analysis/panelToolbar";
-import { boardAtom, gameAtom, gameEvalAtom } from "@/sections/analysis/states";
+import { boardAtom, gameAtom } from "@/sections/analysis/states";
 import EngineSettingsButton from "@/sections/engineSettings/engineSettingsButton";
 import { Icon } from "@iconify/react";
 import {
@@ -17,17 +18,22 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { useAtomValue } from "jotai";
+import { Chess } from "chess.js";
+import { useAtom, useAtomValue } from "jotai";
+import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
 export default function GameAnalysis() {
   const theme = useTheme();
   const [tab, setTab] = useState(0);
   const isLgOrGreater = useMediaQuery(theme.breakpoints.up("lg"));
+  const router = useRouter();
 
-  const gameEval = useAtomValue(gameEvalAtom);
-  const game = useAtomValue(gameAtom);
-  const board = useAtomValue(boardAtom);
+  const { tempGamesList, loadTempGame, getTempGameById } =
+    useTempGamesManager();
+  const gameEval = useAtomValue(boardAtom);
+  const [game] = useAtom(gameAtom);
+  const [board, setBoard] = useAtom(boardAtom);
 
   const showMovesTab = game.history().length > 0 || board.history().length > 0;
 
@@ -36,9 +42,39 @@ export default function GameAnalysis() {
     if (tab === 2 && !gameEval) setTab(0);
   }, [showMovesTab, gameEval, tab]);
 
+  // Обработка параметра tempGameId для загрузки игры из временного списка
+  useEffect(() => {
+    const { tempGameId } = router.query;
+
+    if (tempGameId && typeof tempGameId === "string") {
+      const id = parseInt(tempGameId, 10);
+      const tempGame = getTempGameById(id);
+
+      if (tempGame) {
+        // Функция для сброса доски
+        const resetBoard = () => setBoard(new Chess());
+
+        // Загружаем игру через общий хук
+        loadTempGame(tempGame, resetBoard);
+      }
+    }
+  }, [router.query, getTempGameById, loadTempGame, setBoard]);
+
   return (
     <Grid container gap={4} justifyContent="space-evenly" alignItems="start">
       <PageTitle title="Chesskit-Pro Game Analysis" />
+
+      {/* <Grid container justifyContent="center" alignItems="center" size={12}>
+        <Link href="/temp-games" passHref>
+          <Button
+            variant="outlined"
+            startIcon={<Icon icon="mdi:playlist-play" />}
+            sx={{ mb: 2 }}
+          >
+            Temporary Games List ({tempGamesList.length})
+          </Button>
+        </Link>
+      </Grid> */}
 
       <Board />
 

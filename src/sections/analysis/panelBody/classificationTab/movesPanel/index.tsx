@@ -10,13 +10,11 @@ export default function MovesPanel() {
       gap={0.5}
       paddingY={1}
       sx={{
-        scrollbarWidth: "thin",
-        overflowY: "auto",
         width: "100%",
         height: "100%",
       }}
       maxHeight="calc(100vh - 250px)"
-      id="moves-panel"
+      id="moves-panel-container" // Изменяем ID для уникальности
     >
       <BranchesMovesPanel />
     </Grid>

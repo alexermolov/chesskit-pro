@@ -1,5 +1,5 @@
 import { Icon } from "@iconify/react";
-import { IconButton, Tooltip } from "@mui/material";
+import { Button, Typography } from "@mui/material";
 import { useAtom } from "jotai";
 import { showEngineLinesAtom } from "../states";
 
@@ -11,24 +11,25 @@ export default function ToggleEngineLinesButton() {
   };
 
   return (
-    <Tooltip
-      title={showEngineLines ? "Hide engine lines" : "Show engine lines"}
+    <Button
+      variant="contained"
+      onClick={handleToggle}
+      size="small"
+      color={showEngineLines ? "primary" : "inherit"}
+      startIcon={
+        <Icon icon={showEngineLines ? "mdi:eye" : "mdi:eye-off"} height={18} />
+      }
+      sx={{
+        backgroundColor: showEngineLines ? "primary.main" : "action.hover",
+        color: showEngineLines ? "primary.contrastText" : "text.primary",
+        "&:hover": {
+          backgroundColor: showEngineLines ? "primary.dark" : "action.selected",
+        },
+      }}
     >
-      <IconButton
-        onClick={handleToggle}
-        size="small"
-        sx={{
-          backgroundColor: showEngineLines ? "primary.main" : "action.hover",
-          color: showEngineLines ? "primary.contrastText" : "text.primary",
-          "&:hover": {
-            backgroundColor: showEngineLines
-              ? "primary.dark"
-              : "action.selected",
-          },
-        }}
-      >
-        <Icon icon={showEngineLines ? "mdi:eye" : "mdi:eye-off"} height={16} />
-      </IconButton>
-    </Tooltip>
+      <Typography fontSize="0.9em" fontWeight="500" lineHeight="1.4em">
+        {showEngineLines ? "Hide lines" : "Show lines"}
+      </Typography>
+    </Button>
   );
 }

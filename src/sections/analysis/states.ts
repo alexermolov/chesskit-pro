@@ -2,6 +2,7 @@ import { DEFAULT_ENGINE } from "@/constants";
 import { getRecommendedWorkersNb } from "@/lib/engine/worker";
 import { EngineName } from "@/types/enums";
 import { CurrentPosition, GameEval, SavedEvals } from "@/types/eval";
+import { Game } from "@/types/game";
 import { MoveTree, MoveTreeUtils } from "@/types/moveTree";
 import { Chess, Move, DEFAULT_POSITION } from "chess.js";
 import { atom } from "jotai";
@@ -25,6 +26,9 @@ export const moveHistoryAtom = atom<{
 export const moveTreeAtom = atom<MoveTree>(
   MoveTreeUtils.createEmptyTree(DEFAULT_POSITION)
 );
+
+// Атом для временного списка игр в сессии (не сохраняется в базу данных)
+export const tempGamesListAtom = atomWithStorage<Game[]>("tempGamesList", []);
 
 export const boardOrientationAtom = atom(true);
 export const showBestMoveArrowAtom = atom(true);

@@ -1,7 +1,7 @@
 import BoardEditorModal from "@/components/BoardEditorModal";
 import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
 import { Icon } from "@iconify/react";
-import { IconButton, Tooltip } from "@mui/material";
+import { Button, Typography } from "@mui/material";
 import { useAtom, useSetAtom } from "jotai";
 import { useCallback, useState } from "react";
 import {
@@ -49,21 +49,22 @@ export default function BoardEditorButton() {
 
   return (
     <>
-      <Tooltip title="Edit board position">
-        <IconButton
-          onClick={handleOpen}
-          size="small"
-          sx={{
-            backgroundColor: "action.hover",
-            color: "text.primary",
-            "&:hover": {
-              backgroundColor: "action.selected",
-            },
-          }}
-        >
-          <Icon icon="mdi:pencil" height={16} />
-        </IconButton>
-      </Tooltip>
+      <Button
+        variant="contained"
+        onClick={handleOpen}
+        size="small"
+        color="primary"
+        startIcon={<Icon icon="mdi:pencil" height={18} />}
+        sx={{
+          "&:hover": {
+            backgroundColor: "primary.dark",
+          },
+        }}
+      >
+        <Typography fontSize="0.9em" fontWeight="500" lineHeight="1.4em">
+          Edit board
+        </Typography>
+      </Button>
 
       <BoardEditorModal
         open={open}

@@ -28,6 +28,7 @@ import { useSetAtom } from "jotai";
 import { boardOrientationAtom } from "../analysis/states";
 import {
   createGameInfoFromPgn,
+  GameInfo,
   gamesListAtom,
 } from "../analysis/states/gamesListState";
 
@@ -68,10 +69,9 @@ export default function NewGameDialog({
         // Если найдено несколько игр, сохраняем их в список и загружаем первую
         const gameInfos = games
           .map((game, index) => createGameInfoFromPgn(game.pgn, index))
-          .filter(Boolean);
+          .filter((game): game is GameInfo => game !== null); // Фильтрация null значений с типизацией
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setGamesList(gameInfos as any);
+        setGamesList(gameInfos);
 
         // Показываем сообщение о том, что загружено несколько игр
         if (messageTimeout.current) {

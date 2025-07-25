@@ -1,5 +1,4 @@
 import { Chess } from "chess.js";
-import { PgnParser } from "./pgnParser";
 
 interface PgnGame {
   pgn: string;
@@ -73,24 +72,5 @@ export class MultiGamePgnParser {
     }
 
     return games.filter((game) => game.length > 0);
-  }
-
-  /**
-   * Parses a multi-game PGN string and returns an array of Chess.js games with move trees
-   */
-  static parseMultiGamePgnWithMoveTrees(pgn: string): Array<{
-    game: Chess;
-    moveTree: unknown;
-    headers: Record<string, string>;
-  }> {
-    const pgnGames = this.parseMultiGamePgn(pgn);
-
-    return pgnGames.map((game) => {
-      const result = PgnParser.parsePgnToMoveTree(game.pgn);
-      return {
-        ...result,
-        headers: result.game.getHeaders(),
-      };
-    });
   }
 }
