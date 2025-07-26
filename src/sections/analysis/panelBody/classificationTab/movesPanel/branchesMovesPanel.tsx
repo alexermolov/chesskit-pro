@@ -1,6 +1,6 @@
 import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
 import { PgnParser } from "@/lib/pgnParser";
-import { MoveTree, MoveTreeNode, MoveTreeUtils } from "@/types/moveTree";
+import { MoveTree } from "@/types/moveTree";
 import { Icon } from "@iconify/react";
 import { Box, IconButton, TextField, useTheme } from "@mui/material";
 import { useCallback, useMemo, useState } from "react";
@@ -23,28 +23,20 @@ export default function BranchesMovesPanel() {
     [updateNodeComment]
   );
 
-  // Получаем правильно сформированный PGN
-  const correctPgn = useMemo(() => {
-    if (!moveTree) return "";
-
-    const pgn = MoveTreeUtils.toPgn(moveTree);
-
-    return pgn;
-  }, [moveTree]);
   return (
     <Box
       sx={{
         width: "100%",
         minWidth: 0, // Позволяет контейнеру сжиматься
         padding: 1,
-        overflowY: "auto",
+        overflowY: "auto", // Вертикальная прокрутка
+        overflowX: "hidden", // Скрываем горизонтальную прокрутку
         maxHeight: "40vh",
         fontSize: "0.9rem",
         lineHeight: 1.4,
       }}
       id="moves-panel"
     >
-      {/* Правильное отображение PGN с ветками */}
       <Box
         sx={{
           fontSize: "0.95rem",
@@ -54,7 +46,6 @@ export default function BranchesMovesPanel() {
         }}
       >
         <PgnDisplay
-          pgn={correctPgn}
           moveTree={moveTree}
           onMoveClick={handleMoveClick}
           onCommentUpdate={handleCommentUpdate}
@@ -67,15 +58,34 @@ export default function BranchesMovesPanel() {
 
 // Новый компонент для отображения PGN с кликабельными ходами
 interface PgnDisplayProps {
-  pgn: string;
   moveTree: MoveTree;
   onMoveClick: (nodeId: string) => void;
   onCommentUpdate: (nodeId: string, comment: string | null) => void;
   currentNodeId: string;
 }
 
+// Типы для представления элементов отображения
+type ElementType =
+  | "move" // Ход (сан-нотация)
+  | "moveNumber" // Номер хода (1., 5..., и т.д.)
+  | "comment" // Комментарий
+  | "variationStart" // Начало вариации (
+  | "variationEnd" // Конец вариации )
+  | "result" // Результат партии (* или 1-0, 0-1, 1/2-1/2)
+  | "space"; // Пробел
+
+// Элемент отображения дерева ходов
+interface DisplayElement {
+  id: string; // Уникальный идентификатор элемента
+  type: ElementType; // Тип элемента
+  text: string; // Текст для отображения
+  nodeId?: string; // ID узла в дереве ходов (для move и comment)
+  indentLevel: number; // Уровень отступа для вариаций
+  needsNewLine: boolean; // Нужен ли перенос строки перед элементом
+  forceLineBreakAfter?: boolean; // Принудительно добавить перенос строки после элемента
+}
+
 function PgnDisplay({
-  pgn,
   moveTree,
   onMoveClick,
   onCommentUpdate,
@@ -138,8 +148,6 @@ function PgnDisplay({
 
   // Function to format comment with arrows
   const formatCommentWithArrows = useCallback((commentText: string) => {
-    console.log(commentText);
-
     const arrows = PgnParser.extractArrowsFromComment(commentText);
 
     if (arrows.length === 0) {
@@ -192,31 +200,6 @@ function PgnDisplay({
     return formattedText;
   }, []);
 
-  // Функция для поиска nodeId последнего хода перед комментарием
-  const findNodeIdForComment = useCallback(
-    (commentIndex: number, tokens: string[]): string | null => {
-      // Ищем последний ход перед комментарием
-      for (let i = commentIndex - 1; i >= 0; i--) {
-        const token = tokens[i];
-        if (
-          !token.startsWith("{") &&
-          !token.endsWith("}") &&
-          !/^\d+\.+$/.test(token) &&
-          token !== "(" &&
-          token !== ")"
-        ) {
-          const cleanToken = token.replace(/^\d+(\.\.\.|\.)/, "");
-          const nodeId = findNodeBySan(cleanToken, moveTree);
-          if (nodeId) {
-            return nodeId;
-          }
-        }
-      }
-      return null;
-    },
-    [moveTree]
-  );
-
   // Определяем цвета в зависимости от темы (мемоизируем)
   const colors = useMemo(
     () => ({
@@ -229,265 +212,327 @@ function PgnDisplay({
     [theme.palette.mode]
   );
 
-  // Разбираем PGN и создаем кликабельные элементы с форматированием
-  const renderPgn = useMemo(() => {
-    if (!pgn) return null;
+  // Генерация элементов отображения на основе дерева ходов
+  // Алгоритм аналогичен toPgn, но создает структуру данных, а не строку
+  const displayElements = useMemo(() => {
+    if (!moveTree || !moveTree.nodes || !moveTree.rootId) {
+      return [];
+    }
 
-    // Создаем более точную карту сопоставления с учетом порядка
-    const moveElements: Array<{
-      token: string;
-      nodeId?: string;
-      isMove: boolean;
-      index: number | string;
-      isVariationStart?: boolean;
-      isVariationEnd?: boolean;
-      isComment?: boolean;
-      needsNewLine?: boolean;
-      indentLevel?: number;
-    }> = [];
+    const elements: DisplayElement[] = [];
+    let elementId = 0;
 
-    // Токенизируем PGN с сохранением пробелов в комментариях
-    function tokenizePgn(pgnText: string): string[] {
-      const tokens: string[] = [];
-      let i = 0;
-      // Remove only PGN headers with quotes, not arrows
-      const cleanPgn = pgnText
-        .replace(/^\s*\[[^\]]*"[^"]*"\]\s*$/gm, "")
-        .trim();
+    // Функция для генерации уникального ID элемента
+    const generateElementId = () => {
+      return `el_${elementId++}`;
+    };
 
-      while (i < cleanPgn.length) {
-        const char = cleanPgn[i];
+    // Функция для подсчета номера хода на основе пути от корня
+    // Аналогично getMoveNumber в toPgn
+    const getMoveNumber = (nodeId: string): number => {
+      let currentId = nodeId;
+      let moveCount = 0;
 
-        if (char === "(") {
-          tokens.push("(");
-          i++;
-        } else if (char === ")") {
-          tokens.push(")");
-          i++;
-        } else if (char === "{") {
-          // Комментарий - сохраняем с фигурными скобками и пробелами
-          let comment = "{";
-          i++; // пропускаем {
-          while (i < cleanPgn.length && cleanPgn[i] !== "}") {
-            comment += cleanPgn[i];
-            i++;
+      while (currentId && currentId !== moveTree.rootId) {
+        const node = moveTree.nodes[currentId];
+        if (node && node.move) {
+          moveCount++;
+        }
+        currentId = node?.parent || "";
+      }
+
+      return Math.ceil(moveCount / 2);
+    };
+
+    // Функция для определения цвета хода
+    // Аналогично isWhiteMove в toPgn
+    const isWhiteMove = (nodeId: string): boolean => {
+      let currentId = nodeId;
+      let moveCount = 0;
+
+      while (currentId && currentId !== moveTree.rootId) {
+        const node = moveTree.nodes[currentId];
+        if (node && node.move) {
+          moveCount++;
+        }
+        currentId = node?.parent || "";
+      }
+
+      return moveCount % 2 === 1;
+    };
+
+    // Рекурсивная функция для обработки узла и его детей
+    // Аналогично processNode в toPgn
+    const processNode = (
+      nodeId: string,
+      skipMove: boolean = false,
+      isFirstInVariation: boolean = false,
+      insideVariation: boolean = false,
+      indentLevel: number = 0
+    ): void => {
+      const node = moveTree.nodes[nodeId];
+      if (!node) return;
+
+      // Добавляем ход (кроме корня и если не пропускаем)
+      if (node.move && !skipMove) {
+        const moveNumber = getMoveNumber(nodeId);
+        const isWhite = isWhiteMove(nodeId);
+
+        // Для первого хода вариации:
+        // - если белый, то N.ход
+        // - если черный, то N...ход
+        if (isFirstInVariation) {
+          if (isWhite) {
+            // Добавляем номер хода
+            elements.push({
+              id: generateElementId(),
+              type: "moveNumber",
+              text: `${moveNumber}.`,
+              indentLevel,
+              needsNewLine: false,
+            });
+
+            // Добавляем ход
+            elements.push({
+              id: generateElementId(),
+              type: "move",
+              text: node.san,
+              nodeId,
+              indentLevel,
+              needsNewLine: false,
+            });
+          } else {
+            // Добавляем номер хода с многоточием
+            elements.push({
+              id: generateElementId(),
+              type: "moveNumber",
+              text: `${moveNumber}...`,
+              indentLevel,
+              needsNewLine: false,
+            });
+
+            // Добавляем ход
+            elements.push({
+              id: generateElementId(),
+              type: "move",
+              text: node.san,
+              nodeId,
+              indentLevel,
+              needsNewLine: false,
+            });
           }
-          comment += "}"; // добавляем закрывающую скобку
-          i++; // пропускаем }
-
-          // Проверяем содержимое комментария
-          const commentContent = comment.slice(1, -1); // убираем фигурные скобки
-          const hasArrows =
-            PgnParser.extractArrowsFromComment(commentContent).length > 0;
-          const cleanedContent =
-            PgnParser.removeClockAndArrowsFromComment(commentContent);
-
-          // Добавляем токен если есть реальное содержимое ИЛИ стрелки
-          if (cleanedContent.trim().length > 0 || hasArrows) {
-            tokens.push(comment);
-          }
-        } else if (char === "$") {
-          // NAG
-          let nag = "$";
-          i++;
-          while (i < cleanPgn.length && /\d/.test(cleanPgn[i])) {
-            nag += cleanPgn[i];
-            i++;
-          }
-          tokens.push(nag);
-        } else if (/\s/.test(char)) {
-          // Пропускаем пробелы между токенами
-          i++;
         } else {
-          // Ход, номер хода или результат
-          let token = "";
-          while (i < cleanPgn.length && !/[\s(){}]/.test(cleanPgn[i])) {
-            token += cleanPgn[i];
-            i++;
+          // Внутри вариации и основной линии:
+          // - белые ходы всегда с номером
+          // - черные ходы всегда без номера
+          if (isWhite) {
+            // Добавляем номер хода
+            elements.push({
+              id: generateElementId(),
+              type: "moveNumber",
+              text: `${moveNumber}.`,
+              indentLevel,
+              needsNewLine: false,
+            });
+
+            // Добавляем ход
+            elements.push({
+              id: generateElementId(),
+              type: "move",
+              text: node.san,
+              nodeId,
+              indentLevel,
+              needsNewLine: false,
+            });
+          } else {
+            // Добавляем только ход без номера
+            elements.push({
+              id: generateElementId(),
+              type: "move",
+              text: node.san,
+              nodeId,
+              indentLevel,
+              needsNewLine: false,
+            });
           }
-          if (token) {
-            tokens.push(token);
-          }
+        }
+
+        // Добавляем комментарий если есть
+        if (node.comment) {
+          elements.push({
+            id: generateElementId(),
+            type: "comment",
+            text: node.comment,
+            nodeId,
+            indentLevel,
+            needsNewLine: false,
+          });
         }
       }
 
-      return tokens;
-    }
+      // Если нет детей - конец ветки
+      if (node.children.length === 0) {
+        return;
+      }
 
-    const tokens = tokenizePgn(pgn);
+      // Если один ребенок - просто продолжаем
+      if (node.children.length === 1) {
+        processNode(
+          node.children[0],
+          false,
+          false,
+          insideVariation,
+          indentLevel
+        );
+        return;
+      }
 
-    // Создаем список всех ходов в главной линии в правильном порядке
-    const mainLineMoves: Array<{ san: string; nodeId: string }> = [];
+      // Если несколько детей - есть вариации
+      // Определяем главного ребенка
+      let mainChild: string | null = null;
+      const variations: string[] = [];
 
-    // Проверяем, что moveTree существует и имеет нужные свойства
-    if (moveTree && moveTree.nodes && moveTree.rootId) {
-      let currentId: string | null = moveTree.rootId;
+      const currentMainIndex = moveTree.mainLineIds.indexOf(nodeId);
+      if (
+        currentMainIndex !== -1 &&
+        currentMainIndex + 1 < moveTree.mainLineIds.length
+      ) {
+        const nextMainLineId = moveTree.mainLineIds[currentMainIndex + 1];
+        if (node.children.includes(nextMainLineId)) {
+          mainChild = nextMainLineId;
+          variations.push(
+            ...node.children.filter((childId) => childId !== nextMainLineId)
+          );
+        }
+      }
 
-      while (currentId) {
-        const node: MoveTreeNode | null = moveTree.nodes[currentId] || null;
-        if (!node) break;
+      // Если не нашли в основной линии, берем первого ребенка как основного
+      if (!mainChild) {
+        mainChild = node.children[0];
+        variations.push(...node.children.slice(1));
+      }
 
-        if (node.move) {
-          mainLineMoves.push({
-            san: node.move.san,
-            nodeId: currentId,
+      // 1. Сначала добавляем ход основной линии
+      const mainChildNode = moveTree.nodes[mainChild];
+      if (mainChildNode && mainChildNode.move) {
+        const moveNumber = getMoveNumber(mainChild);
+        const isWhite = isWhiteMove(mainChild);
+
+        // Основная линия - номер только для белых
+        if (isWhite) {
+          // Добавляем номер хода
+          elements.push({
+            id: generateElementId(),
+            type: "moveNumber",
+            text: `${moveNumber}.`,
+            indentLevel,
+            needsNewLine: false,
+          });
+
+          // Добавляем ход
+          elements.push({
+            id: generateElementId(),
+            type: "move",
+            text: mainChildNode.san,
+            nodeId: mainChild,
+            indentLevel,
+            needsNewLine: false,
+          });
+        } else {
+          // Черные ходы в основной линии всегда без номера
+          elements.push({
+            id: generateElementId(),
+            type: "move",
+            text: mainChildNode.san,
+            nodeId: mainChild,
+            indentLevel,
+            needsNewLine: false,
           });
         }
 
-        // Переходим к первому ребенку (главная линия)
-        currentId = node.children[0] || null;
+        // Добавляем комментарий если есть
+        if (mainChildNode.comment) {
+          elements.push({
+            id: generateElementId(),
+            type: "comment",
+            text: mainChildNode.comment,
+            nodeId: mainChild,
+            indentLevel,
+            needsNewLine: false,
+          });
+        }
       }
-    }
 
-    // Индекс для отслеживания текущего хода в главной линии
-    let mainLineMoveIndex = 0;
-    let variationDepth = 0;
-    let afterVariation = false;
+      // 2. Сразу обрабатываем все вариации
+      for (const variationId of variations) {
+        // Начало вариации
+        elements.push({
+          id: generateElementId(),
+          type: "variationStart",
+          text: "(",
+          indentLevel: indentLevel + 1,
+          needsNewLine: true, // Новая строка для начала вариации
+        });
 
-    tokens.forEach((token, index) => {
-      // Убираем завершающий символ
-      if (token === "*") {
-        moveElements.push({
-          token,
-          isMove: false,
-          index,
+        // Обрабатываем вариацию
+        processNode(variationId, false, true, true, indentLevel + 1);
+
+        // Конец вариации
+        elements.push({
+          id: generateElementId(),
+          type: "variationEnd",
+          text: ")",
+          indentLevel: indentLevel + 1,
           needsNewLine: false,
-          indentLevel: 0,
-        });
-        return;
-      }
-
-      // Скобки вариаций
-      if (token === "(") {
-        variationDepth++;
-        moveElements.push({
-          token,
-          isMove: false,
-          index,
-          isVariationStart: true,
-          needsNewLine: true,
-          indentLevel: variationDepth,
-        });
-        return;
-      }
-
-      if (token === ")") {
-        moveElements.push({
-          token,
-          isMove: false,
-          index,
-          isVariationEnd: true,
-          needsNewLine: false,
-          indentLevel: variationDepth,
-        });
-        variationDepth--;
-        afterVariation = true;
-        return;
-      }
-
-      // Номера ходов
-      if (/^\d+\.+$/.test(token)) {
-        const needsNewLine = afterVariation && variationDepth === 0;
-        moveElements.push({
-          token,
-          isMove: false,
-          index,
-          needsNewLine,
-          indentLevel: variationDepth,
-        });
-        afterVariation = false;
-        return;
-      }
-
-      // Комментарии в фигурных скобках
-      if (token.startsWith("{") && token.endsWith("}")) {
-        // Находим nodeId последнего хода перед комментарием
-        const commentNodeId = findNodeIdForComment(index, tokens);
-        moveElements.push({
-          token,
-          nodeId: commentNodeId || undefined,
-          isMove: false,
-          index,
-          isComment: true,
-          needsNewLine: false, // Изменено с true на false для inline отображения
-          indentLevel: variationDepth,
-        });
-        return;
-      }
-
-      // Проверяем, является ли токен ходом из главной линии
-      // Сначала извлекаем номер хода, если есть
-      const moveNumberMatch = token.match(/^(\d+)(\.\.\.|\.)(.*)$/);
-      let displayToken = token;
-      let moveNumber = null;
-
-      if (moveNumberMatch) {
-        moveNumber = (moveNumberMatch[1] + moveNumberMatch[2]) as any; // "1." или "1..."
-        displayToken = (moveNumberMatch[3] || moveNumber) as any; // ход или номер если нет хода
-      }
-
-      // Если есть номер хода, добавляем его как отдельный элемент
-      if (moveNumber && moveNumberMatch && moveNumberMatch[3]) {
-        const needsNewLine = afterVariation && variationDepth === 0;
-        moveElements.push({
-          token: moveNumber,
-          isMove: false,
-          index: index + "_num",
-          needsNewLine,
-          indentLevel: variationDepth,
-        });
-        afterVariation = false;
-      }
-
-      const cleanToken = displayToken.replace(/^\d+(\.\.\.|\.)/, "");
-      if (
-        (cleanToken || displayToken) &&
-        mainLineMoveIndex < mainLineMoves.length &&
-        mainLineMoves[mainLineMoveIndex].san === (cleanToken || displayToken)
-      ) {
-        moveElements.push({
-          token: cleanToken || displayToken,
-          nodeId: mainLineMoves[mainLineMoveIndex].nodeId,
-          isMove: true,
-          index,
-          needsNewLine: false,
-          indentLevel: variationDepth,
-        });
-        mainLineMoveIndex++;
-        return;
-      }
-
-      // Если это не ход из главной линии, ищем в вариантах
-      const nodeId = findNodeBySan(cleanToken || displayToken, moveTree);
-      if (nodeId) {
-        moveElements.push({
-          token: cleanToken || displayToken,
-          nodeId,
-          isMove: true,
-          index,
-          needsNewLine: false,
-          indentLevel: variationDepth,
-        });
-      } else {
-        moveElements.push({
-          token: displayToken,
-          isMove: false,
-          index,
-          needsNewLine: false,
-          indentLevel: variationDepth,
+          forceLineBreakAfter: true, // Добавляем перенос строки ПОСЛЕ закрывающей скобки
         });
       }
+
+      // 3. Потом продолжаем с детей основной линии (пропуская сам ход, так как уже добавили)
+      if (mainChildNode) {
+        processNode(mainChild, true, false, false, indentLevel);
+      }
+    };
+
+    // Начинаем с корня
+    processNode(moveTree.rootId, false, false, false, 0);
+
+    // Добавляем символ окончания
+    elements.push({
+      id: generateElementId(),
+      type: "result",
+      text: "*",
+      indentLevel: 0,
+      needsNewLine: false,
     });
 
-    // Рендерим элементы с учетом переносов строк и отступов
-    const result: React.JSX.Element[] = [];
-    let currentLine: React.JSX.Element[] = [];
+    return elements;
+  }, [moveTree]);
+
+  // Отображение элементов с разбивкой на строки
+  const renderElements = useMemo(() => {
+    if (!displayElements.length) {
+      return null;
+    }
+
+    // Группируем элементы по строкам
+    const lines: React.ReactNode[] = [];
+    let currentLine: React.ReactNode[] = [];
     let lineIndex = 0;
 
+    // Функция для завершения текущей строки
     const flushLine = () => {
       if (currentLine.length > 0) {
-        result.push(
-          <div key={`line-${lineIndex++}`} style={{ marginBottom: "2px" }}>
+        lines.push(
+          <div
+            key={`line-${lineIndex++}`}
+            style={{
+              marginBottom: "3px",
+              display: "flex",
+              flexWrap: "wrap", // Разрешаем переносить элементы внутри строки
+              alignItems: "center",
+            }}
+          >
             {currentLine}
           </div>
         );
@@ -495,233 +540,47 @@ function PgnDisplay({
       }
     };
 
-    moveElements.forEach(
-      ({ token, nodeId, isMove, index, needsNewLine, indentLevel }) => {
-        // Добавляем перенос строки если нужно
-        if (needsNewLine && currentLine.length > 0) {
-          flushLine();
-        }
+    // Обрабатываем каждый элемент
+    displayElements.forEach((element) => {
+      // Если нужен перенос строки, завершаем текущую строку
+      if (element.needsNewLine) {
+        flushLine();
+      }
 
-        // Добавляем отступы для вариаций
-        const indentStyle = {
-          marginLeft: `${(indentLevel || 0) * 12}px`,
-        };
+      // Создаем соответствующий React-элемент в зависимости от типа
+      let reactElement: React.ReactNode;
 
-        if (!isMove) {
-          // Не ход - отображаем как обычный текст
-          if (token === "*") {
-            currentLine.push(
-              <span key={index} style={{ color: "#666", ...indentStyle }}>
-                {token}
-              </span>
-            );
-            return;
-          }
+      // Общий стиль отступа
+      const indentStyle = {
+        marginLeft:
+          element.indentLevel > 0 ? `${element.indentLevel * 12}px` : 0,
+      };
 
-          if (/^\d+\.+$/.test(token)) {
-            currentLine.push(
-              <span
-                key={index}
-                style={{
-                  color: theme.palette.mode === "dark" ? "#888" : "#333",
-                  marginRight: "3px",
-                  fontWeight: 600,
-                  fontSize: "0.95em",
-                  ...indentStyle,
-                }}
-              >
-                {token}
-              </span>
-            );
-            return;
-          }
+      // Проверяем, является ли этот ход текущим
+      const isCurrentMove = element.nodeId === currentNodeId;
 
-          if (token === "(") {
-            // Начало вариации - перенос строки и отступ
-            flushLine();
-            currentLine.push(
-              <span
-                key={index}
-                style={{ color: "#999", margin: "0 1px", ...indentStyle }}
-              >
-                {token}
-              </span>
-            );
-            return;
-          }
-
-          if (token === ")") {
-            currentLine.push(
-              <span key={index} style={{ color: "#999", margin: "0 1px" }}>
-                {token}
-              </span>
-            );
-            // После закрытия вариации переносим строку
-            flushLine();
-            return;
-          }
-
-          // Комментарии
-          if (token.startsWith("{") && token.endsWith("}")) {
-            const originalCommentText = token.slice(1, -1).trim(); // убираем фигурные скобки
-            const commentNodeId = nodeId; // nodeId найден в предыдущей обработке
-
-            if (commentNodeId && editingComment === commentNodeId) {
-              // Режим редактирования
-              currentLine.push(
-                <Box
-                  key={index}
-                  sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 1,
-                    margin: "0 2px",
-                    ...indentStyle,
-                  }}
-                >
-                  <TextField
-                    size="small"
-                    value={commentText}
-                    onChange={(e) => setCommentText(e.target.value)}
-                    onKeyDown={(e) => {
-                      // Останавливаем всплытие событий для всех клавиш
-                      e.stopPropagation();
-
-                      if (e.key === "Enter" && e.ctrlKey) {
-                        handleSaveComment(commentNodeId);
-                      } else if (e.key === "Escape") {
-                        handleCancelEdit();
-                      }
-                    }}
-                    onKeyUp={(e) => {
-                      // Также останавливаем всплытие для keyUp
-                      e.stopPropagation();
-                    }}
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        fontSize: "0.9em",
-                        backgroundColor:
-                          theme.palette.mode === "dark" ? "#2e2e2e" : "#f5f5f5",
-                      },
-                    }}
-                    autoFocus
-                  />
-                  <IconButton
-                    size="small"
-                    onClick={() => handleSaveComment(commentNodeId)}
-                    sx={{ color: "#4caf50" }}
-                  >
-                    <Icon icon="mdi:check" />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={handleCancelEdit}
-                    sx={{ color: "#f44336" }}
-                  >
-                    <Icon icon="mdi:close" />
-                  </IconButton>
-                </Box>
-              );
-            } else {
-              // Режим просмотра с возможностью редактирования
-              currentLine.push(
-                <Box
-                  key={index}
-                  sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    margin: "0 2px",
-                    ...indentStyle,
-                  }}
-                >
-                  <span
-                    style={{
-                      color:
-                        theme.palette.mode === "dark" ? "#4caf50" : "#2e7d32",
-                      fontStyle: "italic",
-                      fontSize: "0.9em",
-                      fontWeight: 500,
-                      cursor: commentNodeId ? "pointer" : "default",
-                    }}
-                    onClick={() => {
-                      if (commentNodeId) {
-                        handleStartEditComment(
-                          commentNodeId,
-                          originalCommentText
-                        );
-                      }
-                    }}
-                    title={
-                      commentNodeId
-                        ? "Нажмите чтобы редактировать комментарий"
-                        : undefined
-                    }
-                  >
-                    {`{${formatCommentWithArrows(originalCommentText)}}`}
-                  </span>
-                  {commentNodeId && (
-                    <IconButton
-                      size="small"
-                      onClick={() =>
-                        handleStartEditComment(
-                          commentNodeId,
-                          originalCommentText
-                        )
-                      }
-                      sx={{
-                        opacity: 0.6,
-                        "&:hover": { opacity: 1 },
-                        color:
-                          theme.palette.mode === "dark" ? "#4caf50" : "#2e7d32",
-                        fontSize: "0.8rem",
-                        padding: "2px",
-                      }}
-                    >
-                      <Icon icon="mdi:pencil" style={{ fontSize: "12px" }} />
-                    </IconButton>
-                  )}
-                </Box>
-              );
-            }
-            return;
-          }
-
-          currentLine.push(
-            <span key={index} style={{ margin: "0 0.5px", ...indentStyle }}>
-              {token}
-            </span>
-          );
-          return;
-        }
-
-        // Это ход - делаем кликабельным
-        if (nodeId) {
-          const isCurrentMove = nodeId === currentNodeId;
-          const nodeData = moveTree.nodes[nodeId];
-          const hasComment = nodeData?.comment;
-
-          // Проверяем, есть ли реальный текстовый комментарий (не только часы и стрелки)
-          const hasRealComment =
-            hasComment &&
-            PgnParser.removeClockAndArrowsFromComment(hasComment).trim()
-              .length > 0;
-
-          currentLine.push(
+      switch (element.type) {
+        case "move":
+          reactElement = (
             <Box
-              key={index}
+              key={element.id}
               sx={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 0.5,
+                margin: "0 2px", // Увеличиваем отступ между ходами
+                flexShrink: 0, // Предотвращает сжатие элемента
                 ...indentStyle,
               }}
             >
               <span
-                onClick={() => onMoveClick(nodeId)}
+                onClick={() => element.nodeId && onMoveClick(element.nodeId)}
                 onDoubleClick={() => {
-                  const currentComment = hasComment || "";
-                  handleStartEditComment(nodeId, currentComment);
+                  if (element.nodeId) {
+                    const node = moveTree.nodes[element.nodeId];
+                    const currentComment = node?.comment || "";
+                    handleStartEditComment(element.nodeId, currentComment);
+                  }
                 }}
                 style={{
                   cursor: "pointer",
@@ -730,11 +589,10 @@ function PgnDisplay({
                   backgroundColor: isCurrentMove ? "#1976d2" : "transparent",
                   color: isCurrentMove ? "white" : colors.moveColor,
                   fontWeight: isCurrentMove ? 600 : 400,
-                  margin: "1px 1px",
                   transition: "all 0.15s ease",
                   textDecoration: "none",
                   display: "inline-block",
-                  whiteSpace: "nowrap",
+                  whiteSpace: "nowrap", // Запрещает перенос внутри хода
                 }}
                 onMouseEnter={(e) => {
                   if (!isCurrentMove) {
@@ -750,16 +608,18 @@ function PgnDisplay({
                 }}
                 title="Клик - перейти к ходу, Двойной клик - добавить/редактировать комментарий"
               >
-                {token}
+                {element.text}
               </span>
 
-              {/* Иконка для добавления комментария (только если реального комментария нет) */}
-              {!hasRealComment && (
+              {/* Кнопка добавления комментария если его нет */}
+              {element.nodeId && !moveTree.nodes[element.nodeId]?.comment && (
                 <IconButton
                   size="small"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleStartEditComment(nodeId, "");
+                    if (element.nodeId) {
+                      handleStartEditComment(element.nodeId, "");
+                    }
                   }}
                   sx={{
                     opacity: 0.4,
@@ -767,7 +627,6 @@ function PgnDisplay({
                     color: theme.palette.mode === "dark" ? "#666" : "#999",
                     fontSize: "0.7rem",
                     padding: "1px",
-                    marginLeft: "2px",
                   }}
                   title="Добавить комментарий"
                 >
@@ -775,8 +634,8 @@ function PgnDisplay({
                 </IconButton>
               )}
 
-              {/* Показываем поле ввода для нового комментария */}
-              {editingComment === nodeId && (
+              {/* Поле редактирования комментария */}
+              {element.nodeId && editingComment === element.nodeId && (
                 <Box
                   sx={{
                     display: "inline-flex",
@@ -794,7 +653,7 @@ function PgnDisplay({
                       e.stopPropagation();
 
                       if (e.key === "Enter" && e.ctrlKey) {
-                        handleSaveComment(nodeId);
+                        handleSaveComment(element.nodeId!);
                       } else if (e.key === "Escape") {
                         handleCancelEdit();
                       }
@@ -809,13 +668,14 @@ function PgnDisplay({
                         fontSize: "0.9em",
                         backgroundColor:
                           theme.palette.mode === "dark" ? "#2e2e2e" : "#f5f5f5",
+                        maxWidth: "160px", // Ограничиваем ширину поля ввода
                       },
                     }}
                     autoFocus
                   />
                   <IconButton
                     size="small"
-                    onClick={() => handleSaveComment(nodeId)}
+                    onClick={() => handleSaveComment(element.nodeId!)}
                     sx={{ color: "#4caf50" }}
                   >
                     <Icon icon="mdi:check" />
@@ -831,29 +691,188 @@ function PgnDisplay({
               )}
             </Box>
           );
-          return;
-        }
+          break;
 
-        // Ход без nodeId - отображаем как обычный текст
-        currentLine.push(
-          <span key={index} style={{ margin: "0 0.5px", ...indentStyle }}>
-            {token}
-          </span>
-        );
+        case "moveNumber":
+          reactElement = (
+            <span
+              key={element.id}
+              style={{
+                color: theme.palette.mode === "dark" ? "#888" : "#333",
+                marginRight: "3px",
+                fontWeight: 600,
+                fontSize: "0.95em",
+                display: "inline-block",
+                whiteSpace: "nowrap", // Запрещает перенос внутри номера хода
+                flexShrink: 0, // Предотвращает сжатие элемента
+                ...indentStyle,
+              }}
+            >
+              {element.text}
+            </span>
+          );
+          break;
+
+        case "comment":
+          // Проверяем, редактируется ли сейчас этот комментарий
+          if (element.nodeId && editingComment === element.nodeId) {
+            reactElement = null; // Комментарий в режиме редактирования отображается рядом с ходом
+          } else {
+            reactElement = (
+              <Box
+                key={element.id}
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  margin: "0 2px",
+                  flexShrink: 0, // Предотвращает сжатие элемента
+                  ...indentStyle,
+                }}
+              >
+                <span
+                  style={{
+                    color:
+                      theme.palette.mode === "dark" ? "#4caf50" : "#2e7d32",
+                    fontStyle: "italic",
+                    fontSize: "0.9em",
+                    fontWeight: 500,
+                    cursor: element.nodeId ? "pointer" : "default",
+                  }}
+                  onClick={() => {
+                    if (element.nodeId) {
+                      handleStartEditComment(element.nodeId, element.text);
+                    }
+                  }}
+                  title={
+                    element.nodeId
+                      ? "Нажмите чтобы редактировать комментарий"
+                      : undefined
+                  }
+                >
+                  {`{${formatCommentWithArrows(element.text)}}`}
+                </span>
+                {element.nodeId && (
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      if (element.nodeId) {
+                        handleStartEditComment(element.nodeId, element.text);
+                      }
+                    }}
+                    sx={{
+                      opacity: 0.6,
+                      "&:hover": { opacity: 1 },
+                      color:
+                        theme.palette.mode === "dark" ? "#4caf50" : "#2e7d32",
+                      fontSize: "0.8rem",
+                      padding: "2px",
+                    }}
+                  >
+                    <Icon icon="mdi:pencil" style={{ fontSize: "12px" }} />
+                  </IconButton>
+                )}
+              </Box>
+            );
+          }
+          break;
+
+        case "variationStart":
+          reactElement = (
+            <span
+              key={element.id}
+              style={{
+                color: "#999",
+                margin: "0 2px",
+                display: "inline-block",
+                whiteSpace: "nowrap",
+                flexShrink: 0, // Предотвращает сжатие элемента
+                ...indentStyle,
+              }}
+            >
+              {element.text}
+            </span>
+          );
+          break;
+
+        case "variationEnd":
+          reactElement = (
+            <span
+              key={element.id}
+              style={{
+                color: "#999",
+                margin: "0 2px",
+                display: "inline-block",
+                whiteSpace: "nowrap",
+                flexShrink: 0, // Предотвращает сжатие элемента
+                ...indentStyle,
+              }}
+            >
+              {element.text}
+            </span>
+          );
+          break;
+
+        case "result":
+          reactElement = (
+            <span
+              key={element.id}
+              style={{
+                color: "#666",
+                margin: "0 2px",
+                display: "inline-block",
+                whiteSpace: "nowrap",
+                flexShrink: 0, // Предотвращает сжатие элемента
+                ...indentStyle,
+              }}
+            >
+              {element.text}
+            </span>
+          );
+          break;
+
+        case "space":
+        default:
+          reactElement = (
+            <span
+              key={element.id}
+              style={{
+                margin: "0 2px",
+                display: "inline-block",
+                whiteSpace: "nowrap",
+                flexShrink: 0, // Предотвращает сжатие элемента
+                ...indentStyle,
+              }}
+            >
+              {element.text}
+            </span>
+          );
+          break;
       }
-    );
 
-    // Добавляем последнюю строку
-    flushLine();
+      // Добавляем элемент в текущую строку
+      if (reactElement) {
+        currentLine.push(reactElement);
+      }
 
-    return result;
+      // Проверяем, нужно ли добавить перенос строки после текущего элемента
+      if (element.forceLineBreakAfter) {
+        flushLine();
+      }
+    });
+
+    // Добавляем последнюю строку, если она не пуста
+    if (currentLine.length > 0) {
+      flushLine();
+    }
+
+    return lines;
   }, [
-    pgn,
-    moveTree,
-    onMoveClick,
-    colors,
+    displayElements,
     currentNodeId,
-    findNodeIdForComment,
+    moveTree,
+    colors,
+    onMoveClick,
     theme.palette.mode,
     editingComment,
     commentText,
@@ -869,30 +888,13 @@ function PgnDisplay({
         lineHeight: 1.5,
         wordSpacing: "1px",
         padding: 1,
-        display: "block", // Изменено с flex на block для многострочного отображения
-        alignItems: "flex-start",
-        wordBreak: "break-word",
-        whiteSpace: "normal",
+        display: "block",
         width: "100%",
         boxSizing: "border-box",
+        overflowWrap: "break-word", // Позволяет переносить слова
       }}
     >
-      {renderPgn}
+      {renderElements}
     </Box>
   );
-}
-
-// Вспомогательная функция для поиска узла по SAN
-function findNodeBySan(san: string, moveTree: MoveTree): string | null {
-  // Проверяем, что moveTree и moveTree.nodes существуют
-  if (!moveTree || !moveTree.nodes) {
-    return null;
-  }
-
-  for (const [nodeId, node] of Object.entries(moveTree.nodes)) {
-    if (node && node.move && node.move.san === san) {
-      return nodeId;
-    }
-  }
-  return null;
 }

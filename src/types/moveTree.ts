@@ -280,34 +280,24 @@ export class MoveTreeUtils {
         const moveNumber = getMoveNumber(nodeId);
         const isWhite = isWhiteMove(nodeId);
 
-        // Логика нумерации:
-        // 1. Первый ход вариации - всегда с номером
-        // 2. Белые ходы - всегда с номером
-        // 3. Черные ходы - только когда нужен контекст (первый в вариации или после белого)
-        // 4. В основной линии черные ходы без номера
-
-        // Проверяем, нужно ли черному ходу добавить номер
-        // В PGN черным ходам номера нужны только когда контекст неясен
-        const parentNode = node.parent ? tree.nodes[node.parent] : null;
-        const parentIsWhite = parentNode ? isWhiteMove(parentNode.id) : true;
-
-        const needsBlackNumber =
-          !isWhite &&
-          (isFirstInVariation || // первый ход в вариации всегда с номером
-            (insideVariation && parentIsWhite)); // черный ход в вариации после белого
-
+        // Для первого хода вариации:
+        // - если белый, то N.ход
+        // - если черный, то N...ход
         if (isFirstInVariation) {
           if (isWhite) {
             result.push(`${moveNumber}.${node.san}`);
           } else {
             result.push(`${moveNumber}...${node.san}`);
           }
-        } else if (isWhite) {
-          result.push(`${moveNumber}.${node.san}`);
-        } else if (needsBlackNumber) {
-          result.push(`${moveNumber}...${node.san}`);
         } else {
-          result.push(node.san);
+          // Внутри вариации и основной линии:
+          // - белые ходы всегда с номером
+          // - черные ходы всегда без номера
+          if (isWhite) {
+            result.push(`${moveNumber}.${node.san}`);
+          } else {
+            result.push(node.san);
+          }
         }
 
         // Добавляем комментарий если есть
