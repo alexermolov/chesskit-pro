@@ -4,6 +4,7 @@ import { decodeBase64 } from "@/lib/helpers";
 import { Game } from "@/types/game";
 import { Chess } from "chess.js";
 import { useAtomValue, useSetAtom } from "jotai";
+import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { useCallback, useEffect } from "react";
 import LoadGameButtonWithPgn from "../../loadGame/loadGameButtonWithPgn";
@@ -13,8 +14,10 @@ import {
   gameAtom,
   gameEvalAtom,
 } from "../states";
+import { safeNavigate } from "@/lib/electronUtils";
 
 export default function LoadGame() {
+  const { t } = useTranslation("chess");
   const router = useRouter();
   const game = useAtomValue(gameAtom);
   const { setPgn: setGamePgn, reset: resetBoard } =
@@ -89,10 +92,11 @@ export default function LoadGame() {
 
   return (
     <LoadGameButtonWithPgn
-      label={isGameLoaded ? "Load another game" : "Load game"}
+      label={isGameLoaded ? t("load_another_game") : t("load_game")}
       size="small"
       setPgn={async (pgn) => {
-        await router.push("/");
+        // Используем безопасную навигацию для Electron
+        safeNavigate(router, "/");
         // Используем PGN напрямую, чтобы сохранить вариации
         resetAndSetGamePgn(pgn);
       }}

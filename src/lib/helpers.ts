@@ -41,3 +41,40 @@ export const formatDate = (date: Date): string => {
     return "--:--:--";
   }
 };
+
+/**
+ * Removes PGN technical annotations from a comment string
+ * @param comment - The comment string to clean
+ * @returns Cleaned comment without PGN annotations
+ */
+export const cleanPgnAnnotations = (comment: string): string => {
+  return comment
+    .replace(/\{\s*\[%[^}]*\]\s*\}/g, "") // Remove {[%...]} annotations
+    .replace(/\[%[^\]]*\]/g, "") // Remove [%...] annotations
+    .replace(/\{\s*\}/g, "") // Remove empty braces
+    .trim();
+};
+
+/**
+ * Checks if a comment has real content (not just PGN annotations)
+ * @param comment - The comment to check
+ * @returns True if comment has real content, false otherwise
+ */
+export const hasRealComment = (comment: string | null | undefined): boolean => {
+  if (!comment || !comment.trim()) return false;
+
+  const cleanComment = cleanPgnAnnotations(comment);
+  return cleanComment.length > 0;
+};
+
+/**
+ * Gets the real content of a comment without PGN annotations
+ * @param comment - The comment to process
+ * @returns Clean comment content or null if no real content
+ */
+export const getRealCommentContent = (
+  comment: string | null | undefined
+): string | null => {
+  if (!hasRealComment(comment)) return null;
+  return cleanPgnAnnotations(comment!);
+};

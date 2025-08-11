@@ -5,12 +5,14 @@ import {
   Typography,
 } from "@mui/material";
 import { useAtom, useAtomValue } from "jotai";
+import { useTranslation } from "next-i18next";
 import { gameAtom, isGameInProgressAtom } from "./states";
 import { useEffect } from "react";
 import UndoMoveButton from "./undoMoveButton";
 import RedoMoveButton from "./redoMoveButton";
 
 export default function GameInProgress() {
+  const { t } = useTranslation("chess");
   const game = useAtomValue(gameAtom);
   const [isGameInProgress, setIsGameInProgress] = useAtom(isGameInProgressAtom);
 
@@ -39,7 +41,7 @@ export default function GameInProgress() {
         gap={2}
         size={12}
       >
-        <Typography>Game in progress</Typography>
+        <Typography>{t("game_in_progress")}</Typography>
         <CircularProgress size={20} color="info" />
       </Grid>
 
@@ -56,7 +58,7 @@ export default function GameInProgress() {
 
       <Grid container justifyContent="center" alignItems="center" size={12}>
         <Button variant="outlined" onClick={handleResign}>
-          Resign
+          {t("resign")}
         </Button>
       </Grid>
     </Grid>

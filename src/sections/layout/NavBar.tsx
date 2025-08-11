@@ -1,4 +1,5 @@
 import NavLink from "@/components/NavLink";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
 import {
   boardAtom,
@@ -94,18 +95,21 @@ export default function NavBar({ darkMode, switchDarkMode }: Props) {
             </Typography>
           </NavLink>
 
-          <IconButton
-            sx={{ ml: "min(0.6rem, 0.8vw)" }}
-            onClick={switchDarkMode}
-            color="inherit"
-            edge="end"
-          >
-            {darkMode ? (
-              <Icon icon="mdi:brightness-7" />
-            ) : (
-              <Icon icon="mdi:brightness-4" />
-            )}
-          </IconButton>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <LanguageSwitcher />
+            <IconButton
+              sx={{ ml: "min(0.6rem, 0.8vw)" }}
+              onClick={switchDarkMode}
+              color="inherit"
+              edge="end"
+            >
+              {darkMode ? (
+                <Icon icon="mdi:brightness-7" />
+              ) : (
+                <Icon icon="mdi:brightness-4" />
+              )}
+            </IconButton>
+          </Box>
         </Toolbar>
       </AppBar>
       <NavMenu open={drawerOpen} onClose={() => setDrawerOpen(false)} />

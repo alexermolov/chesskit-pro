@@ -2,6 +2,7 @@ import LinearProgressBar from "@/components/LinearProgressBar";
 import { Icon } from "@iconify/react";
 import { Grid2 as Grid, Typography } from "@mui/material";
 import { useAtomValue } from "jotai";
+import { useTranslation } from "next-i18next";
 import { evaluationProgressAtom } from "../states";
 import AnalyzeButton from "./analyzeButton";
 import GamePanel from "./gamePanel";
@@ -10,6 +11,7 @@ import ToggleEngineLinesButton from "./toggleEngineLinesButton";
 import BoardEditorButton from "./boardEditorButton";
 
 export default function PanelHeader() {
+  const { t } = useTranslation("chess");
   const evaluationProgress = useAtomValue(evaluationProgressAtom);
 
   return (
@@ -30,7 +32,7 @@ export default function PanelHeader() {
         <Icon icon="streamline:clipboard-check" height={24} />
 
         <Typography variant="h5" align="center">
-          Game Management
+          {t("game_management")}
         </Typography>
       </Grid>
 
@@ -47,7 +49,7 @@ export default function PanelHeader() {
         <AnalyzeButton />
         <ToggleEngineLinesButton />
         <BoardEditorButton />
-        <LinearProgressBar value={evaluationProgress} label="Analyzing..." />
+        <LinearProgressBar value={evaluationProgress} label={t("analyzing")} />
       </Grid>
     </Grid>
   );

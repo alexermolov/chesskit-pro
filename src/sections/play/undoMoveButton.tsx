@@ -1,10 +1,12 @@
 import { Button } from "@mui/material";
 import { gameAtom, playerColorAtom } from "./states";
 import { useAtomValue } from "jotai";
+import { useTranslation } from "next-i18next";
 import { useChessActionsWithHistory } from "@/hooks/useChessActionsWithHistory";
 import { Color } from "@/types/enums";
 
 export default function UndoMoveButton() {
+  const { t } = useTranslation("chess");
   const game = useAtomValue(gameAtom);
   const { goToMove, undoMove, canUndo } = useChessActionsWithHistory(gameAtom);
   const playerColor = useAtomValue(playerColorAtom);
@@ -28,7 +30,7 @@ export default function UndoMoveButton() {
 
   return (
     <Button variant="outlined" onClick={handleClick} disabled={!canUndo}>
-      Undo your last move
+      {t("undo_your_last_move")}
     </Button>
   );
 }

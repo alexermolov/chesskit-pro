@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell, protocol } = require("electron");
+const { app, BrowserWindow, Menu, shell, protocol, net } = require("electron");
 const path = require("path");
 const isDev = process.env.NODE_ENV === "development";
 
@@ -24,7 +24,7 @@ function createWindow() {
       // Для безопасности отключаем node integration
       webSecurity: isDev ? false : true,
     },
-    icon: path.join(__dirname, "../public/favicon.ico"),
+    icon: path.join(__dirname, "../build/icon.png"),
     show: false, // Не показываем окно пока оно не готово
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
   });
@@ -84,14 +84,43 @@ function createWindow() {
     }
   });
 
+  // Обработка ресурсов (включая файлы локализации)
+  mainWindow.webContents.session.protocol.registerFileProtocol(
+    "file",
+    (request, callback) => {
+      try {
+        const pathname = decodeURI(new URL(request.url).pathname);
+        const filePath = path.join(__dirname, "../out", pathname);
+
+        // Проверяем существование файла
+        if (require("fs").existsSync(filePath)) {
+          callback({ path: filePath });
+        } else {
+          // Если файл не найден, пробуем найти его без локали в пути
+          const withoutLocale = pathname.replace(/^\/[a-z]{2}\//, "/");
+          const fallbackPath = path.join(__dirname, "../out", withoutLocale);
+
+          if (require("fs").existsSync(fallbackPath)) {
+            callback({ path: fallbackPath });
+          } else {
+            // Если файл всё ещё не найден, возвращаем index.html для SPA роутинга
+            callback({ path: path.join(__dirname, "../out/index.html") });
+          }
+        }
+      } catch (error) {
+        console.error("File protocol error:", error);
+        callback({ error: -2 }); // net::ERR_FAILED
+      }
+    }
+  );
+
   // Обработка роутинга для SPA
   mainWindow.webContents.on(
     "did-fail-load",
     (event, errorCode, errorDescription, validatedURL) => {
       if (errorCode === -6) {
-        // FILE_NOT_FOUND
-        // Перенаправляем на главную страницу для SPA роутинга
         const indexPath = `file://${path.join(__dirname, "../out/index.html")}`;
+        console.log(indexPath);
         mainWindow.loadURL(indexPath);
       }
     }
@@ -209,6 +238,8 @@ protocol.registerSchemesAsPrivileged([
 app.whenReady().then(() => {
   protocol.registerFileProtocol(protocolName, (request, callback) => {
     const url = request.url.replace(`${protocolName}://`, "");
+    console.log(protocolName, request.url, url);
+
     try {
       return callback(decodeURIComponent(url));
     } catch (error) {

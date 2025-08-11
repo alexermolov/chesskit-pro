@@ -27,7 +27,14 @@
     "quotes": ["error", "double", { "avoidEscape": true }],
     "prettier/prettier": ["error", { "endOfLine": "auto" }],
     "require-jsdoc": "off",
-    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_|^e$",
+        "varsIgnorePattern": "^_",
+        "ignoreRestSiblings": true
+      }
+    ],
     "react/no-unescaped-entities": 0,
     "@typescript-eslint/no-deprecated": 1,
     "@typescript-eslint/no-explicit-any": "off",

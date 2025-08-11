@@ -1,9 +1,11 @@
 import { Grid2 as Grid, Typography } from "@mui/material";
 import { useGameDatabase } from "@/hooks/useGameDatabase";
 import { useAtomValue } from "jotai";
+import { useTranslation } from "next-i18next";
 import { gameAtom } from "../states";
 
 export default function GamePanel() {
+  const { t } = useTranslation("chess");
   const { gameFromUrl } = useGameDatabase();
   const game = useAtomValue(gameAtom);
   const gameHeaders = game.getHeaders();
@@ -32,19 +34,19 @@ export default function GamePanel() {
     >
       <Grid container justifyContent="center" alignItems="center" size="grow">
         <Typography noWrap fontSize="0.9rem">
-          Site : {gameFromUrl?.site || gameHeaders.Site || "?"}
+          {t("site")} : {gameFromUrl?.site || gameHeaders.Site || "?"}
         </Typography>
       </Grid>
 
       <Grid container justifyContent="center" alignItems="center" size="grow">
         <Typography noWrap fontSize="0.9rem">
-          Date : {gameFromUrl?.date || gameHeaders.Date || "?"}
+          {t("date")} : {gameFromUrl?.date || gameHeaders.Date || "?"}
         </Typography>
       </Grid>
 
       <Grid container justifyContent="center" alignItems="center" size="grow">
         <Typography noWrap fontSize="0.9rem">
-          Result : {result}
+          {t("result")} : {result}
         </Typography>
       </Grid>
     </Grid>

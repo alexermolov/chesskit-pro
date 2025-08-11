@@ -1,0 +1,23 @@
+{
+  "home": "Startseite",
+  "play": "Spielen",
+  "database": "Datenbank",
+  "temp_games": "Temporäre Partien",
+  "settings": "Einstellungen",
+  "about": "Über",
+  "help": "Hilfe",
+  "load_game": "Partie laden",
+  "new_game": "Neue Partie",
+  "analysis": "Analyse",
+  "editor": "Editor",
+  "back": "Zurück",
+  "forward": "Vor",
+  "menu": "Menü",
+  "close": "Schließen",
+  "preferences": "Einstellungen",
+  "engine_settings": "Engine-Einstellungen",
+  "board_settings": "Brett-Einstellungen",
+  "appearance": "Erscheinungsbild",
+  "language": "Sprache",
+  "theme": "Design"
+}

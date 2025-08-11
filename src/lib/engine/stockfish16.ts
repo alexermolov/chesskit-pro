@@ -13,8 +13,8 @@ export class Stockfish16 {
     const multiThreadIsSupported = isMultiThreadSupported();
 
     const enginePath = multiThreadIsSupported
-      ? "engines/stockfish-16/stockfish-nnue-16.js"
-      : "engines/stockfish-16/stockfish-nnue-16-single.js";
+      ? "/engines/stockfish-16/stockfish-nnue-16.js"
+      : "/engines/stockfish-16/stockfish-nnue-16-single.js";
 
     const customEngineInit = async (worker: EngineWorker) => {
       await sendCommandsToWorker(

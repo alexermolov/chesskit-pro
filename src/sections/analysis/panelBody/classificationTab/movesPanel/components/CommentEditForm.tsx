@@ -19,7 +19,7 @@ export const CommentEditForm = ({
 }: CommentEditFormProps) => {
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      // Останавливаем всплытие событий для всех клавиш
+      // Stop event propagation for all keys
       e.stopPropagation();
 
       if (e.key === "Enter" && e.ctrlKey) {
@@ -32,7 +32,7 @@ export const CommentEditForm = ({
   );
 
   const handleKeyUp = useCallback((e: React.KeyboardEvent) => {
-    // Также останавливаем всплытие для keyUp
+    // Also stop propagation for keyUp
     e.stopPropagation();
   }, []);
 
@@ -55,18 +55,18 @@ export const CommentEditForm = ({
         onChange={(e) => setCommentText(e.target.value)}
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
-        placeholder="Добавить комментарий..."
+        placeholder="Add a comment..."
         sx={{
           "& .MuiInputBase-root": {
             fontSize: "0.9em",
             backgroundColor: (theme) =>
               theme.palette.mode === "dark" ? "#2e2e2e" : "#f5f5f5",
-            maxWidth: "160px", // Ограничиваем ширину поля ввода
+            maxWidth: "160px", // Limit input field width
           },
         }}
         autoFocus
       />
-      <Tooltip title="Сохранить (Ctrl+Enter)" arrow>
+      <Tooltip title="Save (Ctrl+Enter)" arrow>
         <IconButton
           size="small"
           onClick={() => onSave(nodeId)}
@@ -80,7 +80,7 @@ export const CommentEditForm = ({
           <Icon icon="mdi:check" fontSize="14px" />
         </IconButton>
       </Tooltip>
-      <Tooltip title="Отменить (Esc)" arrow>
+      <Tooltip title="Cancel (Esc)" arrow>
         <IconButton
           size="small"
           onClick={onCancel}

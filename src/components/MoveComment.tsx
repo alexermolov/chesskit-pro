@@ -1,15 +1,15 @@
 import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
+import { PgnParser } from "@/lib/pgnParser";
+import { Icon } from "@iconify/react";
 import {
   Box,
   Fade,
-  Typography,
-  TextField,
   IconButton,
+  TextField,
   Tooltip,
+  Typography,
 } from "@mui/material";
 import { useMemo, useState } from "react";
-import { Icon } from "@iconify/react";
-import { PgnParser } from "@/lib/pgnParser";
 
 interface MoveCommentProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,7 +21,7 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState("");
 
-  // Получаем комментарий текущего хода
+  // Get comment for the current move
   const { currentComment, currentNodeId } = useMemo(() => {
     if (!moveTree || !moveTree.currentNodeId || !moveTree.nodes) {
       return { currentComment: null, currentNodeId: null };
@@ -34,7 +34,7 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
     };
   }, [moveTree]);
 
-  // Проверяем, есть ли реальный текстовый комментарий (не только стрелки и часы)
+  // Check if there is a real text comment (not just arrows and clock)
   const hasRealComment = useMemo(() => {
     if (!currentComment) return false;
     const textWithoutArrowsAndClock =
@@ -67,10 +67,10 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
     }
   };
 
-  // Показываем кнопку карандаша (редактирования) всегда, если есть текущий ход
+  // Show the pencil button (edit) always if there is a current move
   if (!currentNodeId) return null;
 
-  // Если нет комментария и не в режиме редактирования, показываем только иконку карандаша
+  // If there is no comment and not in edit mode, show only the pencil icon
   if (!hasRealComment && !isEditing) {
     return (
       <Fade in={true} timeout={300}>
@@ -82,7 +82,7 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
             zIndex: 10,
           }}
         >
-          <Tooltip title="Добавить/редактировать комментарий">
+          <Tooltip title="Add/edit comment">
             <IconButton
               onClick={handleStartEdit}
               sx={{
@@ -143,7 +143,7 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
               onKeyDown={handleKeyPress}
               multiline
               rows={3}
-              placeholder="Введите комментарий к ходу..."
+              placeholder="Enter move comment..."
               autoFocus
               sx={{
                 "& .MuiOutlinedInput-root": {
@@ -192,7 +192,7 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
               variant="caption"
               sx={{ color: "rgba(76, 175, 80, 0.7)", textAlign: "center" }}
             >
-              Ctrl+Enter для сохранения, Esc для отмены
+              Ctrl+Enter to save, Esc to cancel
             </Typography>
           </Box>
         ) : (
@@ -206,7 +206,7 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
                 textAlign: "center",
                 fontWeight: 600,
                 letterSpacing: "0.5px",
-                paddingRight: "40px", // Место для кнопки редактирования
+                paddingRight: "40px", // Space for edit button
               }}
             >
               {currentComment
@@ -222,7 +222,7 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
                 gap: 0.5,
               }}
             >
-              <Tooltip title="Редактировать комментарий">
+              <Tooltip title="Edit comment">
                 <IconButton
                   onClick={handleStartEdit}
                   sx={{
@@ -235,7 +235,7 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
                   <Icon icon="material-symbols:edit" width="16" height="16" />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Удалить комментарий">
+              <Tooltip title="Delete comment">
                 <IconButton
                   onClick={() =>
                     currentNodeId &&

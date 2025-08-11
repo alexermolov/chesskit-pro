@@ -1,7 +1,7 @@
 import { PgnParser } from "@/lib/pgnParser";
 
 export class CommentUtils {
-  // Форматирование комментария с заменой стрелок на иконки
+  // Format comment by replacing arrows with icons
   static formatCommentWithArrows(commentText: string): string {
     const arrows = PgnParser.extractArrowsFromComment(commentText);
 
@@ -55,28 +55,28 @@ export class CommentUtils {
     return formattedText;
   }
 
-  // Подготовка комментария к сохранению - сохраняет стрелки и часы
+  // Prepare comment for saving - preserves arrows and clock
   static prepareCommentForSave(
     newText: string,
     currentComment: string
   ): string {
     const trimmedComment = newText.trim();
 
-    // Извлекаем существующие стрелки и часы
+    // Extract existing arrows and clock
     const existingArrows = PgnParser.extractArrowsFromComment(currentComment);
     const existingClock = PgnParser.extractClockFromComment(currentComment);
 
-    // Комбинируем новый текст с существующими аннотациями
+    // Combine new text with existing annotations
     let finalComment = trimmedComment;
 
-    // Добавляем стрелки
+    // Add arrows
     existingArrows.forEach((arrow) => {
       finalComment += ` [%draw arrow,${arrow.from},${arrow.to}${
         arrow.color ? `,${arrow.color}` : ""
       }]`;
     });
 
-    // Добавляем часы
+    // Add clock
     if (existingClock) {
       finalComment += ` [%clk ${existingClock}]`;
     }

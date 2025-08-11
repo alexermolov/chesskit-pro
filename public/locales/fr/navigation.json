@@ -1,0 +1,23 @@
+{
+  "home": "Accueil",
+  "play": "Jouer",
+  "database": "Base de données",
+  "temp_games": "Parties temporaires",
+  "settings": "Paramètres",
+  "about": "À propos",
+  "help": "Aide",
+  "load_game": "Charger partie",
+  "new_game": "Nouvelle partie",
+  "analysis": "Analyse",
+  "editor": "Éditeur",
+  "back": "Retour",
+  "forward": "Suivant",
+  "menu": "Menu",
+  "close": "Fermer",
+  "preferences": "Préférences",
+  "engine_settings": "Paramètres moteur",
+  "board_settings": "Paramètres échiquier",
+  "appearance": "Apparence",
+  "language": "Langue",
+  "theme": "Thème"
+}

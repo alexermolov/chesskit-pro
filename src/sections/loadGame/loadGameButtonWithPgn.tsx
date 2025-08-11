@@ -1,6 +1,7 @@
 import { Button, Typography } from "@mui/material";
 import { useState } from "react";
 import NewGameDialog from "./loadGameDialog";
+import { useTranslation } from "next-i18next";
 
 interface Props {
   setPgn?: (pgn: string) => Promise<void>;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function LoadGameButtonWithPgn({ setPgn, label, size }: Props) {
+  const { t } = useTranslation("common");
   const [openDialog, setOpenDialog] = useState(false);
 
   return (
@@ -19,7 +21,7 @@ export default function LoadGameButtonWithPgn({ setPgn, label, size }: Props) {
         size={size}
       >
         <Typography fontSize="0.9em" fontWeight="500" lineHeight="1.4em">
-          {label || "Add game"}
+          {label || t("add_game")}
         </Typography>
       </Button>
 

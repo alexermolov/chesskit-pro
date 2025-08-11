@@ -28,6 +28,7 @@ import { useEffect } from "react";
 import { isEngineSupported } from "@/lib/engine/shared";
 import { Stockfish16_1 } from "@/lib/engine/stockfish16_1";
 import { useAtom } from "jotai";
+import { useTranslation } from "next-i18next";
 import { boardHueAtom, pieceSetAtom } from "@/components/board/states";
 import Image from "next/image";
 import {
@@ -44,6 +45,7 @@ interface Props {
 }
 
 export default function EngineSettingsDialog({ open, onClose }: Props) {
+  const { t } = useTranslation(["common", "chess"]);
   const [depth, setDepth] = useAtomLocalStorage(
     "engine-depth",
     engineDepthAtom
@@ -76,7 +78,7 @@ export default function EngineSettingsDialog({ open, onClose }: Props) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle variant="h5" sx={{ paddingBottom: 1 }}>
-        Settings
+        {t("common:settings")}
       </DialogTitle>
       <DialogContent sx={{ paddingBottom: 0 }}>
         <Grid
@@ -93,13 +95,12 @@ export default function EngineSettingsDialog({ open, onClose }: Props) {
             size={{ xs: 12, sm: 7, md: 8 }}
           >
             <Typography variant="body2">
-              {ENGINE_LABELS[DEFAULT_ENGINE].small} is the default engine if
-              your device support its requirements. It offers the best balance
-              between speed and strength.{" "}
-              {ENGINE_LABELS[STRONGEST_ENGINE].small} is the strongest engine
-              available, note that it requires a one time download of{" "}
-              {ENGINE_LABELS[STRONGEST_ENGINE].sizeMb}MB and is much more
-              compute intensive.
+              {ENGINE_LABELS[DEFAULT_ENGINE].small}{" "}
+              {t("chess:engine_default_description")}{" "}
+              {ENGINE_LABELS[STRONGEST_ENGINE].small}{" "}
+              {t("chess:engine_strongest_description_full", {
+                size: ENGINE_LABELS[STRONGEST_ENGINE].sizeMb,
+              })}
             </Typography>
           </Grid>
 
@@ -109,12 +110,14 @@ export default function EngineSettingsDialog({ open, onClose }: Props) {
             size={{ xs: 12, sm: 5, md: 4 }}
           >
             <FormControl variant="outlined">
-              <InputLabel id="dialog-select-label">Engine</InputLabel>
+              <InputLabel id="dialog-select-label">
+                {t("chess:engine")}
+              </InputLabel>
               <Select
                 labelId="dialog-select-label"
                 id="dialog-select"
                 displayEmpty
-                input={<OutlinedInput label="Engine" />}
+                input={<OutlinedInput label={t("chess:engine")} />}
                 value={engineName}
                 onChange={(e) => setEngineName(e.target.value as EngineName)}
                 sx={{ width: 280, maxWidth: "100%" }}
@@ -133,7 +136,7 @@ export default function EngineSettingsDialog({ open, onClose }: Props) {
           </Grid>
 
           <Slider
-            label="Maximum depth"
+            label={t("chess:maximum_depth")}
             value={depth}
             setValue={setDepth}
             min={10}
@@ -142,7 +145,7 @@ export default function EngineSettingsDialog({ open, onClose }: Props) {
           />
 
           <Slider
-            label="Number of lines"
+            label={t("chess:number_of_lines")}
             value={multiPv}
             setValue={setMultiPv}
             min={2}
@@ -159,7 +162,7 @@ export default function EngineSettingsDialog({ open, onClose }: Props) {
             size={{ xs: 12, sm: 8, md: 9 }}
           >
             <Slider
-              label="Board hue"
+              label={t("chess:board_hue")}
               value={boardHue}
               setValue={setBoardHue}
               min={0}
@@ -174,12 +177,14 @@ export default function EngineSettingsDialog({ open, onClose }: Props) {
             size={{ xs: 12, sm: 4, md: 3 }}
           >
             <FormControl variant="outlined">
-              <InputLabel id="dialog-select-label">Piece set</InputLabel>
+              <InputLabel id="dialog-select-label">
+                {t("chess:piece_set")}
+              </InputLabel>
               <Select
                 labelId="dialog-select-label"
                 id="dialog-select"
                 displayEmpty
-                input={<OutlinedInput label="Piece set" />}
+                input={<OutlinedInput label={t("chess:piece_set")} />}
                 value={pieceSet}
                 onChange={(e) =>
                   setPieceSet(e.target.value as (typeof PIECE_SETS)[number])
@@ -211,7 +216,7 @@ export default function EngineSettingsDialog({ open, onClose }: Props) {
             size={{ xs: 12, md: 11 }}
           >
             <Slider
-              label="Number of threads"
+              label={t("chess:number_of_threads")}
               value={engineWorkersNb}
               setValue={setEngineWorkersNb}
               min={1}
@@ -219,13 +224,8 @@ export default function EngineSettingsDialog({ open, onClose }: Props) {
               marksFilter={1}
               infoContent={
                 <>
-                  More threads means faster analysis, but only if your device
-                  can handle them, otherwise it may have the opposite effect.
-                  The estimated optimal value for your device is{" "}
-                  {getRecommendedWorkersNb()}. Due to privacy restrictions in
-                  some browsers, this value might be underestimated. Don't
-                  hesitate to try different values to find the best one for your
-                  device.
+                  {t("chess:threads_info_1")} {getRecommendedWorkersNb()}.{" "}
+                  {t("chess:threads_info_2")}
                 </>
               }
             />
@@ -234,7 +234,7 @@ export default function EngineSettingsDialog({ open, onClose }: Props) {
       </DialogContent>
       <DialogActions sx={{ m: 1 }}>
         <Button variant="contained" onClick={onClose}>
-          Close
+          {t("common:close")}
         </Button>
       </DialogActions>
     </Dialog>

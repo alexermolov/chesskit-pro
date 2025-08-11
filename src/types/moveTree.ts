@@ -144,7 +144,7 @@ export class MoveTreeUtils {
       if (!isMainLineBranch && path.length > 0) {
         branches.push({
           id: `branch_${index}`,
-          name: `Вариант ${index + 1}`,
+          name: `Variation ${index + 1}`,
           nodeIds: [tree.rootId, ...path],
           isMainLine: false,
           moveCount: path.length,
@@ -234,7 +234,7 @@ export class MoveTreeUtils {
   static toPgn(tree: MoveTree): string {
     const result: string[] = [];
 
-    // Функция для подсчета номера хода на основе пути от корня
+    // Function to calculate the move number based on the path from the root
     const getMoveNumber = (nodeId: string): number => {
       let currentId = nodeId;
       let moveCount = 0;
@@ -250,7 +250,7 @@ export class MoveTreeUtils {
       return Math.ceil(moveCount / 2);
     };
 
-    // Функция для определения цвета хода
+    // Function to determine the color of the move
     const isWhiteMove = (nodeId: string): boolean => {
       let currentId = nodeId;
       let moveCount = 0;
@@ -270,19 +270,20 @@ export class MoveTreeUtils {
       nodeId: string,
       skipMove: boolean = false,
       isFirstInVariation: boolean = false,
-      insideVariation: boolean = false
+      insideVariation: boolean = false,
+      variationEnd: boolean = false
     ): void => {
       const node = tree.nodes[nodeId];
       if (!node) return;
 
-      // Добавляем ход (кроме корня и если не пропускаем)
+      // Add the move (except for the root and if not skipping)
       if (node.move && !skipMove) {
         const moveNumber = getMoveNumber(nodeId);
         const isWhite = isWhiteMove(nodeId);
 
-        // Для первого хода вариации:
-        // - если белый, то N.ход
-        // - если черный, то N...ход
+        // For the first move in a variation:
+        // - if white, then N.move
+        // - if black, then N...move
         if (isFirstInVariation) {
           if (isWhite) {
             result.push(`${moveNumber}.${node.san}`);
@@ -290,35 +291,49 @@ export class MoveTreeUtils {
             result.push(`${moveNumber}...${node.san}`);
           }
         } else {
-          // Внутри вариации и основной линии:
-          // - белые ходы всегда с номером
-          // - черные ходы всегда без номера
+          // Inside a variation and the main line:
+          // - white moves always have a number
+          // - black moves: without a number, but with number if coming after variation end
           if (isWhite) {
             result.push(`${moveNumber}.${node.san}`);
           } else {
-            result.push(node.san);
+            // For black moves: if returning from variation, add move number with ellipsis
+            if (variationEnd) {
+              result.push(`${moveNumber}...${node.san}`);
+            } else {
+              result.push(node.san);
+            }
           }
         }
 
-        // Добавляем комментарий если есть
+        // Reset variationEnd flag after using it
+        variationEnd = false;
+
+        // Add the comment if it exists
         if (node.comment) {
           result.push(`{${node.comment}}`);
         }
       }
 
-      // Если нет детей - конец ветки
+      // If there are no children - end of the branch
       if (node.children.length === 0) {
         return;
       }
 
-      // Если один ребенок - просто продолжаем
+      // If there is one child - just continue
       if (node.children.length === 1) {
-        processNode(node.children[0], false, false, insideVariation);
+        processNode(
+          node.children[0],
+          false,
+          false,
+          insideVariation,
+          variationEnd
+        );
         return;
       }
 
-      // Если несколько детей - есть вариации
-      // Определяем главного ребенка
+      // If there are multiple children - there are variations
+      // Determine the main child
       let mainChild: string | null = null;
       const variations: string[] = [];
 
@@ -336,54 +351,56 @@ export class MoveTreeUtils {
         }
       }
 
-      // Если не нашли в основной линии, берем первого ребенка как основного
+      // If not found in the main line, take the first child as the main one
       if (!mainChild) {
         mainChild = node.children[0];
         variations.push(...node.children.slice(1));
       }
 
-      // 1. Сначала добавляем ход основной линии
+      // 1. First, add the move of the main line
       const mainChildNode = tree.nodes[mainChild];
       if (mainChildNode && mainChildNode.move) {
         const moveNumber = getMoveNumber(mainChild);
         const isWhite = isWhiteMove(mainChild);
 
-        // Основная линия - номер только для белых
+        // Main line - number only for white
         if (isWhite) {
           result.push(`${moveNumber}.${mainChildNode.san}`);
         } else {
-          // Черные ходы в основной линии всегда без номера
+          // Black moves in the main line always without a number
           result.push(mainChildNode.san);
         }
 
-        // Добавляем комментарий если есть
+        // Add the comment if it exists
         if (mainChildNode.comment) {
           result.push(`{${mainChildNode.comment}}`);
         }
       }
 
-      // 2. Сразу обрабатываем все вариации
+      // 2. Immediately process all variations
       for (const variationId of variations) {
         result.push("(");
-        processNode(variationId, false, true, true); // первый ход вариации, внутри вариации
+        processNode(variationId, false, true, true, false); // first move in variation, inside variation
         result.push(")");
+
+        variationEnd = true;
       }
 
-      // 3. Потом продолжаем с детей основной линии (пропуская сам ход, так как уже добавили)
+      // 3. Then continue with the children of the main line (skipping the move itself, as it has already been added)
       if (mainChildNode) {
-        processNode(mainChild, true, false, false); // возвращаемся к основной линии
+        processNode(mainChild, true, false, false, variationEnd); // return to the main line
       }
     };
 
-    // Начинаем с корня
-    processNode(tree.rootId, false, false, false);
+    // Start from the root
+    processNode(tree.rootId, false, false, false, false);
 
-    // Добавляем символ окончания
+    // Add the end symbol
     if (result.length > 0) {
       result.push("*");
     }
 
-    // Объединяем в строку
+    // Combine into a string
     return result.join(" ");
   }
 }

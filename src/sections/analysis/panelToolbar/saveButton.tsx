@@ -2,12 +2,14 @@ import { useGameDatabase } from "@/hooks/useGameDatabase";
 import { Icon } from "@iconify/react";
 import { Grid2 as Grid, IconButton, Tooltip } from "@mui/material";
 import { useAtomValue } from "jotai";
+import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { boardAtom, gameAtom, gameEvalAtom, moveTreeAtom } from "../states";
 import { getGameToSave } from "@/lib/chess";
 import { MoveTreeUtils } from "@/types/moveTree";
 
 export default function SaveButton() {
+  const { t } = useTranslation("chess");
   const game = useAtomValue(gameAtom);
   const board = useAtomValue(boardAtom);
   const gameEval = useAtomValue(gameEvalAtom);
@@ -16,8 +18,8 @@ export default function SaveButton() {
     useGameDatabase();
   const router = useRouter();
 
-  // Проверяем наличие ходов в дереве или в старых атомах для совместимости
-  const hasMovesInTree = Object.keys(moveTree.nodes).length > 1; // больше чем только root
+  // Check for moves in the tree or in old atoms for compatibility
+  const hasMovesInTree = Object.keys(moveTree.nodes).length > 1; // more than just root
   const enableSave =
     !gameFromUrl &&
     (hasMovesInTree || board.history().length || game.history().length);
@@ -27,15 +29,15 @@ export default function SaveButton() {
 
     let gameId: number;
 
-    // Если есть дерево ходов с ветками, используем новый метод
+    // If there is a move tree with branches, use the new method
     if (hasMovesInTree) {
-      // Получаем PGN с ветками
+      // Get PGN with branches
       const pgnWithBranches = MoveTreeUtils.toPgn(moveTree);
 
-      // Используем новый метод для сохранения с кастомным PGN
+      // Use the new method for saving with custom PGN
       gameId = await addGameWithCustomPgn(game, pgnWithBranches);
     } else {
-      // Fallback к старому методу для совместимости
+      // Fallback to the old method for compatibility
       const gameToSave = getGameToSave(game, board);
       gameId = await addGame(gameToSave);
     }
@@ -57,7 +59,7 @@ export default function SaveButton() {
   return (
     <>
       {gameFromUrl ? (
-        <Tooltip title="Game saved in database">
+        <Tooltip title={t("game_saved_in_database")}>
           <Grid>
             <IconButton disabled={true} sx={{ paddingX: 1.2, paddingY: 0.5 }}>
               <Icon icon="ri:folder-check-line" />
@@ -65,7 +67,7 @@ export default function SaveButton() {
           </Grid>
         </Tooltip>
       ) : (
-        <Tooltip title="Save game">
+        <Tooltip title={t("save_game")}>
           <Grid>
             <IconButton
               onClick={handleSave}

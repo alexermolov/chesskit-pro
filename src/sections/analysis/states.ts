@@ -13,7 +13,7 @@ export const gameAtom = atom(new Chess());
 export const boardAtom = atom(new Chess());
 export const currentPositionAtom = atom<CurrentPosition>({});
 
-// Атом для линейной истории ходов (для совместимости)
+// Atom for linear move history (for compatibility)
 export const moveHistoryAtom = atom<{
   allMoves: Move[];
   currentPosition: number;
@@ -22,12 +22,12 @@ export const moveHistoryAtom = atom<{
   currentPosition: -1,
 });
 
-// Новый атом для древовидной истории ходов с ветками
+// New atom for tree-based move history with branches
 export const moveTreeAtom = atom<MoveTree>(
   MoveTreeUtils.createEmptyTree(DEFAULT_POSITION)
 );
 
-// Атом для временного списка игр в сессии (не сохраняется в базу данных)
+// Atom for temporary list of games in session (not saved to database)
 export const tempGamesListAtom = atomWithStorage<Game[]>("tempGamesList", []);
 
 export const boardOrientationAtom = atom(true);

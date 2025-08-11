@@ -2,9 +2,11 @@ import { useSetAtom } from "jotai";
 import { boardOrientationAtom } from "../states";
 import { IconButton, Tooltip } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { useTranslation } from "next-i18next";
 import { useEffect } from "react";
 
 export default function FlipBoardButton() {
+  const { t } = useTranslation("chess");
   const setBoardOrientation = useSetAtom(boardOrientationAtom);
 
   useEffect(() => {
@@ -22,7 +24,7 @@ export default function FlipBoardButton() {
   }, [setBoardOrientation]);
 
   return (
-    <Tooltip title="Flip board">
+    <Tooltip title={t("flip_board")}>
       <IconButton
         onClick={() => setBoardOrientation((prev) => !prev)}
         sx={{ paddingX: 1.2, paddingY: 0.5 }}

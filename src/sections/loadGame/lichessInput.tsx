@@ -13,12 +13,14 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { GameItem } from "./gameItem";
+import { useTranslation } from "next-i18next";
 
 interface Props {
   onSelect: (pgn: string, boardOrientation?: boolean) => void;
 }
 
 export default function LichessInput({ onSelect }: Props) {
+  const { t } = useTranslation("common");
   const [rawStoredValue, setStoredValues] = useLocalStorage<string>(
     "lichess-username",
     ""
@@ -120,7 +122,7 @@ export default function LichessInput({ onSelect }: Props) {
           renderInput={(params) => (
             <TextField
               {...params}
-              label="Enter your Lichess username..."
+              label={t("enter_lichess_username")}
               variant="outlined"
             />
           )}
@@ -139,12 +141,10 @@ export default function LichessInput({ onSelect }: Props) {
           {isFetching ? (
             <CircularProgress />
           ) : isError ? (
-            <span style={{ color: "salmon" }}>
-              User not found. Please check your username.
-            </span>
+            <span style={{ color: "salmon" }}>{t("user_not_found")}</span>
           ) : !games?.length ? (
             <span style={{ color: "salmon" }}>
-              No games found. Please check your username.
+              {t("no_games_found_check_username")}
             </span>
           ) : (
             <List sx={{ width: "100%" }}>

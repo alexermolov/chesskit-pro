@@ -1,129 +1,105 @@
+import { useBranchNavigation } from "@/hooks/useBranchNavigation";
+import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
 import { Icon } from "@iconify/react";
 import {
   Grid2 as Grid,
   IconButton,
-  Tooltip,
   Menu,
   MenuItem,
-  Typography,
+  Tooltip,
 } from "@mui/material";
-import { useChessActionsWithHistory } from "@/hooks/useChessActionsWithHistory";
-import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
-import { useBranchNavigation } from "@/hooks/useBranchNavigation";
-import { boardAtom } from "../states";
+import { useTranslation } from "next-i18next";
 import { useCallback, useEffect, useState } from "react";
+import { boardAtom } from "../states";
 
 export default function RedoMoveButton() {
-  const [useBranches, setUseBranches] = useState(true);
+  const { t } = useTranslation("chess");
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
 
-  // Хуки для обеих систем
-  const { redoMove: redoLinear, canRedo: canRedoLinear } =
-    useChessActionsWithHistory(boardAtom);
-  const {
-    canRedo: canRedoBranched,
-    getAlternativeMoves,
-    goToNode,
-  } = useChessActionsWithBranches(boardAtom);
+  const { canRedo, getAlternativeMoves } =
+    useChessActionsWithBranches(boardAtom);
 
-  // Хук для навигации с модальным окном
+  // Hook for navigation with modal window
   const { redoMove: redoMoveWithModal } = useBranchNavigation(boardAtom);
 
-  const canRedo = useBranches ? canRedoBranched : canRedoLinear;
-  const redoMove = useBranches ? redoMoveWithModal : redoLinear;
-
-  // Получаем альтернативные ходы для контекстного меню
-  const alternativeMoves = useBranches ? getAlternativeMoves() : [];
+  const redoMove = redoMoveWithModal; // Always use modal for consistency
+  // Get alternative moves for the context menu
+  const alternativeMoves = getAlternativeMoves();
 
   const handleRedoMove = useCallback(() => {
-    if (canRedo) {
-      redoMove();
-    }
-  }, [canRedo, redoMove]);
+    redoMove();
+  }, [redoMove]);
 
-  // Обработка правого клика для показа альтернатив
+  // Handle right click to show alternatives
   const handleRightClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
-      if (useBranches && alternativeMoves.length > 1) {
-        event.preventDefault();
+      event.preventDefault();
+      if (alternativeMoves.length > 0) {
         setAnchorEl(event.currentTarget);
       }
     },
-    [useBranches, alternativeMoves.length]
+    [alternativeMoves]
   );
-
-  const handleCloseMenu = () => {
-    setAnchorEl(null);
-  };
-
-  const handleSelectAlternative = (nodeId: string) => {
-    goToNode(nodeId);
-    handleCloseMenu();
-  };
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+Y или Ctrl+Shift+Z для повтора
+      // Ctrl+Y or Ctrl+Shift+Z for redo
       if (
         (e.ctrlKey && e.key === "y") ||
-        (e.ctrlKey && e.shiftKey && e.key === "Z")
+        (e.ctrlKey && e.shiftKey && e.key === "z")
       ) {
+        if (canRedo) redoMove();
         e.preventDefault();
-        handleRedoMove();
       }
 
-      // Ctrl+B для переключения режимов
+      // Ctrl+B for switching modes
       if (e.ctrlKey && e.key === "b") {
         e.preventDefault();
-        setUseBranches(!useBranches);
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
-
     return () => {
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [handleRedoMove, useBranches]);
-
-  const tooltipTitle = useBranches
-    ? `Redo move (Ctrl+Y) | Ветки: ${alternativeMoves.length > 1 ? "ПКМ для альтернатив" : "нет альтернатив"} | Ctrl+B: переключить режим`
-    : "Redo move (Ctrl+Y) | Ctrl+B: переключить на режим веток";
+  }, [canRedo, redoMove]);
 
   return (
     <>
-      <Tooltip title={tooltipTitle}>
+      <Tooltip title={t("redo_move")}>
         <Grid>
           <IconButton
             onClick={handleRedoMove}
-            onContextMenu={handleRightClick}
             disabled={!canRedo}
-            sx={{
-              paddingX: 1.2,
-              paddingY: 0.5,
-              backgroundColor: useBranches ? "action.hover" : "transparent",
-            }}
+            onContextMenu={handleRightClick}
+            sx={{ paddingX: 1.2, paddingY: 0.5 }}
           >
-            <Icon icon="ri:arrow-go-forward-line" height={30} />
+            <Icon icon="ri:arrow-left-line" />
           </IconButton>
         </Grid>
       </Tooltip>
-
-      {/* Контекстное меню для альтернативных ходов */}
+      {/* Context menu for alternative moves */}
       <Menu
         anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleCloseMenu}
+        open={open}
+        onClose={() => setAnchorEl(null)}
+        slotProps={{
+          list: {
+            "aria-labelledby": "basic-button",
+            sx: { maxWidth: 300 },
+          },
+        }}
       >
-        <MenuItem disabled>
-          <Typography variant="caption">Альтернативные ходы:</Typography>
-        </MenuItem>
-        {alternativeMoves.map((altMove) => (
+        {alternativeMoves.map((move, index) => (
           <MenuItem
-            key={altMove.nodeId}
-            onClick={() => handleSelectAlternative(altMove.nodeId)}
+            key={`alternative-${index}`}
+            onClick={() => {
+              // Implement navigation to alternative move
+              setAnchorEl(null);
+            }}
           >
-            {altMove.san}
+            {move.san}
           </MenuItem>
         ))}
       </Menu>

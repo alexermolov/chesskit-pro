@@ -11,6 +11,7 @@ import TimeControlChip from "./timeControlChip";
 import MovesNbChip from "./movesNbChip";
 import DateChip from "./dateChip";
 import GameResultChip from "./gameResultChip";
+import { useTranslation } from "next-i18next";
 
 interface Props {
   game: LoadedGame;
@@ -23,6 +24,7 @@ export const GameItem: React.FC<Props> = ({
   onClick,
   perspectiveUserColor,
 }) => {
+  const { t } = useTranslation("common");
   const theme = useTheme();
   const { white, black, result, timeControl, date, movesNb } = game;
 
@@ -79,7 +81,7 @@ export const GameItem: React.FC<Props> = ({
                 fontWeight: "500",
               }}
             >
-              vs
+              {t("vs")}
             </Typography>
 
             <Typography

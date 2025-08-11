@@ -11,10 +11,12 @@ import {
 } from "@mui/material";
 import { Chess } from "chess.js";
 import { useAtomValue } from "jotai";
+import { useTranslation } from "next-i18next";
 import { useState } from "react";
 import { boardAtom, gameAtom, gameEvalAtom, moveTreeAtom } from "../states";
 
 export default function AddToTempListButton() {
+  const { t } = useTranslation("chess");
   const game = useAtomValue(gameAtom);
   const board = useAtomValue(boardAtom);
   const gameEval = useAtomValue(gameEvalAtom);
@@ -26,7 +28,7 @@ export default function AddToTempListButton() {
     "success" | "error" | "info" | "warning"
   >("success");
 
-  // Проверяем наличие ходов в дереве или в старых атомах для совместимости
+  // Check for moves in the tree or in old atoms for compatibility
   const hasMovesInTree = Object.keys(moveTree.nodes).length > 1;
   const enableAdd =
     hasMovesInTree || board.history().length || game.history().length;
@@ -37,17 +39,17 @@ export default function AddToTempListButton() {
     try {
       let pgnToSave: string;
 
-      // Если есть дерево ходов с ветками, используем новый метод
+      // If there is a move tree with branches, use the new method
       if (hasMovesInTree) {
-        // Получаем PGN с ветками
+        // Get PGN with branches
         pgnToSave = MoveTreeUtils.toPgn(moveTree);
       } else {
-        // Fallback к старому методу для совместимости
+        // Fallback to the old method for compatibility
         const gameToSave = getGameToSave(game, board);
         pgnToSave = gameToSave.pgn();
       }
 
-      // Проверяем, что PGN валидный
+      // Check that PGN is valid
       try {
         const testGame = new Chess();
         testGame.loadPgn(pgnToSave);
@@ -59,10 +61,10 @@ export default function AddToTempListButton() {
         return;
       }
 
-      // Форматируем игру для добавления в список
+      // Format the game to add to the list
       const headers = game.getHeaders();
       const gameToAdd = {
-        id: Date.now(), // Временный ID
+        id: Date.now(), // Temporary ID
         pgn: pgnToSave,
         event: headers.Event || "Game Analysis",
         site: headers.Site || "Chesskit-Pro",
@@ -84,16 +86,16 @@ export default function AddToTempListButton() {
         eval: gameEval,
       };
 
-      // Добавляем игру в список через хук
+      // Add the game to the list through the hook
       addToTempList(gameToAdd);
 
-      // Показываем уведомление об успехе
-      setSnackbarMessage("Game added to temporary list");
+      // Show success notification
+      setSnackbarMessage(t("game_added_to_temporary_list"));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     } catch (error) {
       console.error("Error adding game to temporary list:", error);
-      setSnackbarMessage("Failed to add game to list");
+      setSnackbarMessage(t("failed_to_add_game_to_list"));
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     }
@@ -105,7 +107,7 @@ export default function AddToTempListButton() {
 
   return (
     <>
-      <Tooltip title="Add to temporary list">
+      <Tooltip title={t("add_to_temporary_list")}>
         <Grid>
           <IconButton
             onClick={handleAddToTempList}

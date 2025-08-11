@@ -1,5 +1,6 @@
 import { Box, Grid2Props as GridProps, Tab, Tabs } from "@mui/material";
 import { useAtomValue } from "jotai";
+import { useTranslation } from "next-i18next";
 import { useState } from "react";
 import { gameEvalAtom } from "../../states";
 import MovesClassificationsRecap from "./movesClassificationsRecap";
@@ -7,6 +8,7 @@ import MovesPanel from "./movesPanel";
 import GamesPanel from "./gamesPanel";
 
 export default function ClassificationTab(props: GridProps) {
+  const { t } = useTranslation("chess");
   const gameEval = useAtomValue(gameEvalAtom);
   const hasClassifications =
     Array.isArray(gameEval?.positions) && gameEval.positions.length > 0;
@@ -46,17 +48,17 @@ export default function ClassificationTab(props: GridProps) {
           variant="fullWidth"
         >
           <Tab
-            label="Moves"
+            label={t("moves")}
             id="moves-tab-0"
             aria-controls="moves-tabpanel-0"
           />
           <Tab
-            label="Classification"
+            label={t("classification")}
             id="classification-tab-1"
             aria-controls="classification-tabpanel-1"
           />
           <Tab
-            label="Games"
+            label={t("games")}
             id="games-tab-2"
             aria-controls="games-tabpanel-2"
           />
@@ -95,10 +97,10 @@ export default function ClassificationTab(props: GridProps) {
           ) : (
             <Box sx={{ p: 3, textAlign: "center" }}>
               <Box sx={{ mb: 2, color: "text.secondary" }}>
-                Classification data is not available yet.
+                {t("classification_data_unavailable")}
               </Box>
               <Box sx={{ color: "text.secondary", fontSize: "0.9rem" }}>
-                Run the engine analysis to see move classifications.
+                {t("run_engine_analysis")}
               </Box>
             </Box>
           )}

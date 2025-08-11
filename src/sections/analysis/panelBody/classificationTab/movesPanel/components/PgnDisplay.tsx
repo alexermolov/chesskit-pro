@@ -22,11 +22,11 @@ export function PgnDisplay({
   const [editingComment, setEditingComment] = useState<string | null>(null);
   const [commentText, setCommentText] = useState<string>("");
 
-  // Добавляем функции для работы с комментариями
+  // Adding functions to work with comments
   const handleStartEditComment = useCallback(
     (nodeId: string, currentComment: string) => {
       setEditingComment(nodeId);
-      // Показываем только текстовую часть, убираем стрелки и часы для редактирования
+      // Show only the text part, remove arrows and clocks for editing
       const textOnly =
         PgnParser.removeClockAndArrowsFromComment(currentComment);
       setCommentText(textOnly);
@@ -38,25 +38,25 @@ export function PgnDisplay({
     (nodeId: string) => {
       const trimmedComment = commentText.trim();
 
-      // Получаем текущий комментарий узла
+      // Get the current comment of the node
       const currentNode = moveTree.nodes[nodeId];
       const currentComment = currentNode?.comment || "";
 
-      // Извлекаем существующие стрелки и часы
+      // Extract existing arrows and clocks
       const existingArrows = PgnParser.extractArrowsFromComment(currentComment);
       const existingClock = PgnParser.extractClockFromComment(currentComment);
 
-      // Комбинируем новый текст с существующими аннотациями
+      // Combine new text with existing annotations
       let finalComment = trimmedComment;
 
-      // Добавляем стрелки
+      // Add arrows
       existingArrows.forEach((arrow) => {
         finalComment += ` [%draw arrow,${arrow.from},${arrow.to}${
           arrow.color ? `,${arrow.color}` : ""
         }]`;
       });
 
-      // Добавляем часы
+      // Add clocks
       if (existingClock) {
         finalComment += ` [%clk ${existingClock}]`;
       }
@@ -78,23 +78,23 @@ export function PgnDisplay({
     return CommentUtils.formatCommentWithArrows(commentText);
   }, []);
 
-  // Генерация элементов отображения на основе дерева ходов
+  // Generation of display elements based on the move tree
   const displayElements = useMemo(() => {
     return generateDisplayElements(moveTree);
   }, [moveTree]);
 
-  // Отображение элементов с разбивкой на строки
+  // Displaying elements with line breaks
   const renderElements = useMemo(() => {
     if (!displayElements.length) {
       return null;
     }
 
-    // Группируем элементы по строкам
+    // Grouping elements by lines
     const lines: React.ReactNode[] = [];
     let currentLine: React.ReactNode[] = [];
     let lineIndex = 0;
 
-    // Функция для завершения текущей строки
+    // Function to flush the current line
     const flushLine = () => {
       if (currentLine.length > 0) {
         lines.push(
@@ -104,7 +104,7 @@ export function PgnDisplay({
             sx={{
               marginBottom: "4px",
               display: "flex",
-              flexWrap: "wrap", // Разрешаем переносить элементы внутри строки
+              flexWrap: "wrap", // Allow elements to wrap within the line
               alignItems: "center",
               backgroundColor: "transparent",
               padding: "2px 4px",
@@ -118,23 +118,22 @@ export function PgnDisplay({
       }
     };
 
-    // Обрабатываем каждый элемент
+    // Process each element
     displayElements.forEach((element: DisplayElement) => {
-      // Если нужен перенос строки, завершаем текущую строку
+      // If a line break is needed, finish the current line
       if (element.needsNewLine) {
         flushLine();
       }
 
-      // Создаем соответствующий React-элемент в зависимости от типа
+      // Create the corresponding React element based on the type
       let reactElement: React.ReactNode;
 
-      // Общий стиль отступа
+      // Common indentation style
       const indentStyle = {
-        marginLeft:
-          element.indentLevel > 0 ? `${element.indentLevel * 16}px` : 0,
+        marginLeft: 0,
       };
 
-      // Проверяем, является ли этот ход текущим
+      // Check if this move is the current move
       const isCurrentMove = element.nodeId === currentNodeId;
 
       switch (element.type) {
@@ -202,9 +201,9 @@ export function PgnDisplay({
           break;
 
         case "comment":
-          // Проверяем, редактируется ли сейчас этот комментарий
+          // Check if this comment is currently being edited
           if (element.nodeId && editingComment === element.nodeId) {
-            reactElement = null; // Комментарий в режиме редактирования отображается рядом с ходом
+            reactElement = null; // Comment in edit mode is displayed next to the move
           } else {
             reactElement = (
               <CommentElement
@@ -265,18 +264,18 @@ export function PgnDisplay({
           break;
       }
 
-      // Добавляем элемент в текущую строку
+      // Add the element to the current line
       if (reactElement) {
         currentLine.push(reactElement);
       }
 
-      // Проверяем, нужно ли добавить перенос строки после текущего элемента
+      // Check if a line break is needed after the current element
       if (element.forceLineBreakAfter) {
         flushLine();
       }
     });
 
-    // Добавляем последнюю строку, если она не пуста
+    // Add the last line if it's not empty
     if (currentLine.length > 0) {
       flushLine();
     }
@@ -306,7 +305,7 @@ export function PgnDisplay({
         display: "block",
         width: "100%",
         boxSizing: "border-box",
-        overflowWrap: "break-word", // Позволяет переносить слова
+        overflowWrap: "break-word", // Allows word wrapping
         backgroundColor: (theme) => alpha(theme.palette.background.paper, 0.3),
         borderRadius: 1,
       }}

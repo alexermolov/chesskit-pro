@@ -31,6 +31,7 @@ import {
   GameInfo,
   gamesListAtom,
 } from "../analysis/states/gamesListState";
+import { useTranslation } from "next-i18next";
 
 interface Props {
   open: boolean;
@@ -45,6 +46,7 @@ export default function NewGameDialog({
   setGame,
   setPgn: setPgnCallback,
 }: Props) {
+  const { t } = useTranslation("common");
   const [pgn, setPgn] = useState("");
   const [gameOrigin, setGameOrigin] = useLocalStorage(
     "preferred-game-origin",
@@ -62,31 +64,29 @@ export default function NewGameDialog({
     if (!pgn) return;
 
     try {
-      // Проверяем, содержит ли PGN несколько игр
+      // Check if PGN contains multiple games
       const games = MultiGamePgnParser.parseMultiGamePgn(pgn);
 
       if (games.length > 1) {
-        // Если найдено несколько игр, сохраняем их в список и загружаем первую
+        // If multiple games are found, save them to a list and load the first one
         const gameInfos = games
           .map((game, index) => createGameInfoFromPgn(game.pgn, index))
-          .filter((game): game is GameInfo => game !== null); // Фильтрация null значений с типизацией
+          .filter((game): game is GameInfo => game !== null); // Filter null values with typing
 
         setGamesList(gameInfos);
 
-        // Показываем сообщение о том, что загружено несколько игр
+        // Show a message that multiple games are loaded
         if (messageTimeout.current) {
           clearTimeout(messageTimeout.current);
         }
 
-        setMultiGameMessage(
-          `${games.length} games loaded. All games are available in the Games tab.`
-        );
+        setMultiGameMessage(t("multi_games_loaded", { count: games.length }));
 
         messageTimeout.current = setTimeout(() => {
           setMultiGameMessage("");
         }, 5000);
 
-        // Загружаем первую игру как активную
+        // Load the first game as active
         if (setPgnCallback) {
           setSentryContext("loadedGame", { pgn: games[0].pgn });
           await setPgnCallback(games[0].pgn);
@@ -96,7 +96,7 @@ export default function NewGameDialog({
           await setGame(gameToAdd);
         }
       } else {
-        // Если только одна игра, обрабатываем как обычно
+        // If only one game, process as usual
         if (setPgnCallback) {
           setSentryContext("loadedGame", { pgn });
           await setPgnCallback(pgn);
@@ -121,7 +121,7 @@ export default function NewGameDialog({
       setParsingError(
         error instanceof Error
           ? `${error.message} !`
-          : "Invalid PGN: unknown error !"
+          : t("invalid_pgn_unknown_error")
       );
 
       parsingErrorTimeout.current = setTimeout(() => {
@@ -162,8 +162,8 @@ export default function NewGameDialog({
     >
       <DialogTitle marginY={1} variant="h5">
         {setGame || setPgnCallback
-          ? "Load a game"
-          : "Add a game to your database"}
+          ? t("load_a_game")
+          : t("add_game_to_database")}
       </DialogTitle>
       <DialogContent sx={{ padding: { xs: 2, md: 3 } }}>
         <Grid
@@ -174,12 +174,12 @@ export default function NewGameDialog({
           rowGap={2}
         >
           <FormControl sx={{ my: 1, mr: 2, width: 150 }}>
-            <InputLabel id="dialog-select-label">Game origin</InputLabel>
+            <InputLabel id="dialog-select-label">{t("game_origin")}</InputLabel>
             <Select
               labelId="dialog-select-label"
               id="dialog-select"
               displayEmpty
-              input={<OutlinedInput label="Game origin" />}
+              input={<OutlinedInput label={t("game_origin")} />}
               value={gameOrigin ?? ""}
               onChange={(e) => {
                 setGameOrigin(e.target.value as GameOrigin);
@@ -231,7 +231,7 @@ export default function NewGameDialog({
       </DialogContent>
       <DialogActions sx={{ m: 2 }}>
         <Button variant="outlined" onClick={handleClose}>
-          Cancel
+          {t("cancel")}
         </Button>
         {gameOrigin === GameOrigin.Pgn && (
           <Button
@@ -241,7 +241,7 @@ export default function NewGameDialog({
               handleAddGame(pgn);
             }}
           >
-            Add
+            {t("add")}
           </Button>
         )}
       </DialogActions>

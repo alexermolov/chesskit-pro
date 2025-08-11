@@ -30,13 +30,12 @@ import {
   GridRowParams,
   MuiEvent,
 } from "@mui/x-data-grid";
+import { GetStaticProps } from "next";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-const gridLocaleText: GridLocaleText = {
-  ...GRID_DEFAULT_LOCALE_TEXT,
-  noRowsLabel: "No games in temporary list",
-};
+import { safeNavigate } from "@/lib/electronUtils";
 
 // Преобразованная структура для DataGrid
 interface GameRow {
@@ -59,6 +58,7 @@ interface GameRow {
 }
 
 export default function TempGamesList() {
+  const { t } = useTranslation(["navigation", "common", "chess"]);
   const {
     tempGamesList,
     removeFromTempList,
@@ -66,6 +66,11 @@ export default function TempGamesList() {
     exportTempListToPgn,
   } = useTempGamesManager();
   const router = useRouter();
+
+  const gridLocaleText: GridLocaleText = {
+    ...GRID_DEFAULT_LOCALE_TEXT,
+    noRowsLabel: t("common:no_games"),
+  };
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<
@@ -87,9 +92,9 @@ export default function TempGamesList() {
       site: game.site || "",
       date: game.date || "",
       round: game.round || "",
-      whiteName: game.white?.name || "Unknown",
+      whiteName: game.white?.name || t("common:unknown"),
       whiteRating: game.white?.rating,
-      blackName: game.black?.name || "Unknown",
+      blackName: game.black?.name || t("common:unknown"),
       blackRating: game.black?.rating,
       result: game.result || "",
       hasEval: !!game.eval,
@@ -100,7 +105,7 @@ export default function TempGamesList() {
     }));
 
     setRows(transformedRows);
-  }, [tempGamesList]);
+  }, [tempGamesList, t]);
 
   // Состояние для режима редактирования строк
   const [rowModesModel, setRowModesModel] = useState<GridRowModesModel>({});
@@ -137,21 +142,21 @@ export default function TempGamesList() {
       window.localStorage.setItem("tempGamesList", JSON.stringify(updatedList));
 
       // Уведомляем пользователя
-      setSnackbarMessage("Game details updated successfully");
+      setSnackbarMessage(t("common:game_updated"));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     },
-    [tempGamesList]
+    [tempGamesList, t]
   );
 
   const handleDeleteGameRow = useCallback(
     (id: GridRowId) => () => {
       removeFromTempList(Number(id));
-      setSnackbarMessage("Game removed from list");
+      setSnackbarMessage(t("common:game_removed"));
       setSnackbarSeverity("info");
       setSnackbarOpen(true);
     },
-    [removeFromTempList]
+    [removeFromTempList, t]
   );
 
   const handleCopyGameRow = useCallback(
@@ -159,17 +164,18 @@ export default function TempGamesList() {
       const game = tempGamesList.find((game) => game.id === id);
       if (game) {
         navigator.clipboard?.writeText?.(game.pgn);
-        setSnackbarMessage("PGN copied to clipboard");
+        setSnackbarMessage(t("common:pgn_copied"));
         setSnackbarSeverity("success");
         setSnackbarOpen(true);
       }
     },
-    [tempGamesList]
+    [tempGamesList, t]
   );
 
   const handleAnalyzeGame = useCallback(
     (id: GridRowId) => () => {
-      router.push({ pathname: "/", query: { tempGameId: id } });
+      // Используем безопасную навигацию для Electron
+      safeNavigate(router, "/", { tempGameId: id });
     },
     [router]
   );
@@ -188,10 +194,10 @@ export default function TempGamesList() {
   const handleConfirmClear = useCallback(() => {
     clearTempList();
     setClearConfirmOpen(false);
-    setSnackbarMessage("Temporary games list cleared");
+    setSnackbarMessage(t("common:list_cleared"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
-  }, [clearTempList]);
+  }, [clearTempList, t]);
 
   // Функция для экспорта всех игр в один PGN файл
   const handleExportAllGames = useCallback(async () => {
@@ -251,25 +257,25 @@ export default function TempGamesList() {
     () => [
       {
         field: "event",
-        headerName: "Event",
+        headerName: t("chess:event"),
         width: 150,
         editable: true,
       },
       {
         field: "site",
-        headerName: "Site",
+        headerName: t("chess:site"),
         width: 150,
         editable: true,
       },
       {
         field: "date",
-        headerName: "Date",
+        headerName: t("chess:date"),
         width: 150,
         editable: true,
       },
       {
         field: "round",
-        headerName: "Round",
+        headerName: t("chess:round"),
         headerAlign: "center",
         align: "center",
         width: 150,
@@ -277,7 +283,7 @@ export default function TempGamesList() {
       },
       {
         field: "whiteName",
-        headerName: "White",
+        headerName: t("chess:white"),
         width: 150,
         headerAlign: "center",
         align: "center",
@@ -285,7 +291,7 @@ export default function TempGamesList() {
       },
       {
         field: "whiteRating",
-        headerName: "Rating",
+        headerName: t("common:rating"),
         width: 100,
         headerAlign: "center",
         align: "center",
@@ -294,7 +300,7 @@ export default function TempGamesList() {
       },
       {
         field: "result",
-        headerName: "Result",
+        headerName: t("chess:result"),
         headerAlign: "center",
         align: "center",
         width: 100,
@@ -302,7 +308,7 @@ export default function TempGamesList() {
       },
       {
         field: "blackName",
-        headerName: "Black",
+        headerName: t("chess:black"),
         width: 150,
         headerAlign: "center",
         align: "center",
@@ -310,7 +316,7 @@ export default function TempGamesList() {
       },
       {
         field: "blackRating",
-        headerName: "Rating",
+        headerName: t("common:rating"),
         width: 100,
         headerAlign: "center",
         align: "center",
@@ -319,7 +325,7 @@ export default function TempGamesList() {
       },
       {
         field: "hasEval",
-        headerName: "Evaluation",
+        headerName: t("chess:evaluation"),
         type: "boolean",
         headerAlign: "center",
         align: "center",
@@ -328,7 +334,7 @@ export default function TempGamesList() {
       {
         field: "openEvaluation",
         type: "actions",
-        headerName: "Analyze",
+        headerName: t("chess:analyze"),
         width: 100,
         cellClassName: "actions",
         getActions: ({ id }) => {
@@ -337,7 +343,7 @@ export default function TempGamesList() {
               icon={
                 <Icon icon="streamline:magnifying-glass-solid" width="20px" />
               }
-              label="Open Evaluation"
+              label={t("chess:open_evaluation")}
               onClick={handleAnalyzeGame(id)}
               color="inherit"
               key={`${id}-open-eval-button`}
@@ -348,7 +354,7 @@ export default function TempGamesList() {
       {
         field: "actions",
         type: "actions",
-        headerName: "Actions",
+        headerName: t("chess:actions"),
         width: 100,
         cellClassName: "actions",
         getActions: ({ id }) => {
@@ -358,13 +364,13 @@ export default function TempGamesList() {
             return [
               <GridActionsCellItem
                 icon={<Icon icon="mdi:check" color={green[400]} width="20px" />}
-                label="Save"
+                label={t("common:save")}
                 onClick={handleSaveClick(id)}
                 key={`${id}-save-button`}
               />,
               <GridActionsCellItem
                 icon={<Icon icon="mdi:close" color={red[400]} width="20px" />}
-                label="Cancel"
+                label={t("common:cancel")}
                 onClick={handleCancelClick(id)}
                 key={`${id}-cancel-button`}
               />,
@@ -374,7 +380,7 @@ export default function TempGamesList() {
           return [
             <GridActionsCellItem
               icon={<Icon icon="mdi:pencil" color={blue[400]} width="20px" />}
-              label="Edit"
+              label={t("common:edit")}
               onClick={handleEditClick(id)}
               key={`${id}-edit-button`}
             />,
@@ -382,7 +388,7 @@ export default function TempGamesList() {
               icon={
                 <Icon icon="mdi:delete-outline" color={red[400]} width="20px" />
               }
-              label="Delete"
+              label={t("common:delete")}
               onClick={handleDeleteGameRow(id)}
               key={`${id}-delete-button`}
             />,
@@ -390,7 +396,7 @@ export default function TempGamesList() {
               icon={
                 <Icon icon="ri:clipboard-line" color={blue[400]} width="20px" />
               }
-              label="Copy pgn"
+              label={t("chess:copy_pgn")}
               onClick={handleCopyGameRow(id)}
               key={`${id}-copy-button`}
             />,
@@ -406,6 +412,7 @@ export default function TempGamesList() {
       handleSaveClick,
       handleCancelClick,
       rowModesModel,
+      t,
     ]
   );
 
@@ -421,7 +428,7 @@ export default function TempGamesList() {
       gap={4}
       marginTop={6}
     >
-      <PageTitle title="Chesskit-Pro Temporary Games List" />
+      <PageTitle title={`ChessKit Pro - ${t("navigation:temp_games")}`} />
 
       <Grid
         container
@@ -433,32 +440,35 @@ export default function TempGamesList() {
         <Button
           variant="contained"
           color="primary"
-          onClick={() => router.push("/")}
+          onClick={() => {
+            // Используем безопасную навигацию для Electron
+            safeNavigate(router, "/");
+          }}
           startIcon={<Icon icon="mdi:chess-queen" />}
         >
-          Back to Analysis
+          {t("common:back_to_analysis")}
         </Button>
 
         {tempGamesList.length > 0 && (
           <ButtonGroup variant="outlined">
             {/* Новая кнопка очистки с подтверждением */}
-            <Tooltip title="Clear all games from the temporary list">
+            <Tooltip title={t("common:clear_all_tooltip")}>
               <Button
                 color="error"
                 onClick={handleOpenClearConfirm}
                 startIcon={<Icon icon="mdi:delete-sweep" />}
               >
-                Clear All Games
+                {t("common:clear_all_games")}
               </Button>
             </Tooltip>
 
-            <Tooltip title="Export all games to a single PGN file">
+            <Tooltip title={t("common:export_all_tooltip")}>
               <Button
                 color="primary"
                 onClick={handleExportAllGames}
                 startIcon={<Icon icon="mdi:file-export" />}
               >
-                Export All
+                {t("common:export_all")}
               </Button>
             </Tooltip>
           </ButtonGroup>
@@ -467,13 +477,11 @@ export default function TempGamesList() {
 
       <Grid container justifyContent="center" alignItems="center" size={12}>
         <Typography variant="subtitle2">
-          You have {tempGamesList.length} game
-          {tempGamesList.length !== 1 && "s"} in your temporary list.
+          {t("common:game_count", { count: tempGamesList.length })}
           <span
             style={{ marginLeft: "8px", fontStyle: "italic", color: "#666" }}
           >
-            Double-click on a cell or click the edit icon to modify game
-            details.
+            {t("common:edit_hint")}
           </span>
         </Typography>
       </Grid>
@@ -522,17 +530,16 @@ export default function TempGamesList() {
         aria-describedby="clear-dialog-description"
       >
         <DialogTitle id="clear-dialog-title">
-          Confirm Clear All Games
+          {t("common:confirm_clear_title")}
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="clear-dialog-description">
-            Are you sure you want to clear all {tempGamesList.length} games from
-            the temporary list? This action cannot be undone.
+            {t("common:confirm_clear_message", { count: tempGamesList.length })}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseClearConfirm} color="primary">
-            Cancel
+            {t("common:cancel")}
           </Button>
           <Button
             onClick={handleConfirmClear}
@@ -540,7 +547,7 @@ export default function TempGamesList() {
             variant="contained"
             startIcon={<Icon icon="mdi:delete-forever" />}
           >
-            Clear All Games
+            {t("common:clear_all_confirm")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -562,3 +569,14 @@ export default function TempGamesList() {
     </Grid>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", [
+      "common",
+      "chess",
+      "buttons",
+      "navigation",
+    ])),
+  },
+});

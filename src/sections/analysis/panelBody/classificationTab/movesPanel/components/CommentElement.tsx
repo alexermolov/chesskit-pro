@@ -1,3 +1,4 @@
+import { hasRealComment } from "@/lib/helpers";
 import { Icon } from "@iconify/react";
 import { Box, IconButton, Tooltip, alpha } from "@mui/material";
 
@@ -20,6 +21,11 @@ export const CommentElement = ({
   onStartEditComment,
   formatCommentWithArrows,
 }: CommentElementProps) => {
+  // If there is no real comment, don't display the component
+  if (!hasRealComment(text)) {
+    return null;
+  }
+
   return (
     <Box
       key={id}
@@ -36,11 +42,7 @@ export const CommentElement = ({
         ...indentStyle,
       }}
     >
-      <Tooltip
-        title="Нажмите чтобы редактировать комментарий"
-        arrow
-        enterDelay={500}
-      >
+      <Tooltip title="Click to edit comment" arrow enterDelay={500}>
         <span
           style={{
             color: colors.commentColor,
@@ -58,7 +60,7 @@ export const CommentElement = ({
           {formatCommentWithArrows(text)}
         </span>
       </Tooltip>
-      {nodeId && (
+      {nodeId && hasRealComment(text) && (
         <IconButton
           size="small"
           onClick={() => {

@@ -1,0 +1,23 @@
+{
+  "home": "Home",
+  "play": "Gioca",
+  "database": "Database",
+  "temp_games": "Partite temporanee",
+  "settings": "Impostazioni",
+  "about": "Info",
+  "help": "Aiuto",
+  "load_game": "Carica partita",
+  "new_game": "Nuova partita",
+  "analysis": "Analisi",
+  "editor": "Editor",
+  "back": "Indietro",
+  "forward": "Avanti",
+  "menu": "Menu",
+  "close": "Chiudi",
+  "preferences": "Preferenze",
+  "engine_settings": "Impostazioni motore",
+  "board_settings": "Impostazioni scacchiera",
+  "appearance": "Aspetto",
+  "language": "Lingua",
+  "theme": "Tema"
+}

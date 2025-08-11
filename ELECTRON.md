@@ -1,139 +1,148 @@
 # ChessKit Electron App
 
-Это Electron версия шахматного приложения ChessKit, которое позволяет запускать веб-приложение как нативное настольное приложение на Windows, macOS и Linux.
+This is the Electron version of the ChessKit chess application, which allows you to run the web application as a native desktop application on Windows, macOS, and Linux.
 
-## Особенности
+## Features
 
-- 🎯 **Нативное приложение** - Запускается как обычная программа на вашем компьютере
-- 🔒 **Безопасность** - Настроена безопасная среда выполнения с отключенным nodeIntegration
-- 🌐 **Офлайн работа** - Не требует подключения к интернету после установки
-- 🎨 **Нативное меню** - Полноценное меню приложения с горячими клавишами
-- 📱 **Адаптивность** - Поддержка изменения размера окна и полноэкранного режима
+- 🎯 **Native application** - Runs as a regular program on your computer
+- 🔒 **Security** - Configured secure runtime environment with disabled nodeIntegration
+- 🌐 **Offline operation** - Does not require internet connection after installation
+- 🎨 **Native menu** - Full-featured application menu with hotkeys
+- 📱 **Adaptability** - Support for window resizing and fullscreen mode
 
-## Разработка
+## Development
 
-### Установка зависимостей
+### Installing dependencies
+
 ```bash
 npm install
 ```
 
-### Запуск в режиме разработки
+### Running in development mode
+
 ```bash
-# Автоматически запускает Next.js dev сервер и Electron
+# Automatically starts Next.js dev server and Electron
 npm run electron-dev
 ```
 
-### Запуск production версии
+### Running production version
+
 ```bash
-# Сначала соберите приложение
+# First build the application
 npm run build
 
-# Затем запустите Electron с production билдом
+# Then run Electron with the production build
 npm run electron-build
 ```
 
-## Сборка дистрибутивов
+## Building distributables
 
-### Создание установщика для текущей платформы
+### Creating an installer for the current platform
+
 ```bash
 npm run dist
 ```
 
-### Создание установщиков для всех платформ
+### Creating installers for all platforms
+
 ```bash
 npm run dist-all
 ```
 
-## Доступные скрипты
+## Available scripts
 
-- `npm run electron` - Запустить Electron с уже собранным приложением
-- `npm run electron-dev` - Запустить в режиме разработки
-- `npm run electron-build` - Собрать и запустить production версию
-- `npm run dist` - Создать дистрибутив для текущей платформы
-- `npm run dist-all` - Создать дистрибутивы для Windows, macOS и Linux
+- `npm run electron` - Run Electron with already built application
+- `npm run electron-dev` - Run in development mode
+- `npm run electron-build` - Build and run production version
+- `npm run dist` - Create a distributable for the current platform
+- `npm run dist-all` - Create distributables for Windows, macOS, and Linux
 
-## Структура файлов
+## File structure
 
 ```
 electron/
-├── main.js          # Главный процесс Electron
-└── preload.js       # Preload скрипт для безопасности
+├── main.js          # Electron main process
+└── preload.js       # Preload script for security
 
-out/                 # Статический экспорт Next.js приложения
+out/                 # Static export of Next.js application
 └── ...
 
-dist/                # Готовые дистрибутивы
-├── ChessKit Setup 0.1.0.exe  # Установщик для Windows
-├── win-unpacked/              # Портативная версия
+dist/                # Ready distributables
+├── ChessKit Setup 0.1.0.exe  # Windows installer
+├── win-unpacked/              # Portable version
 └── ...
 ```
 
-## Установка и использование
+## Installation and usage
 
 ### Windows
-1. Скачайте `ChessKit Setup 0.1.0.exe` из папки `dist/`
-2. Запустите установщик и следуйте инструкциям
-3. Запустите ChessKit из меню Пуск или ярлыка на рабочем столе
 
-### Портативная версия
-1. Скопируйте папку `dist/win-unpacked/` в любое место
-2. Запустите `ChessKit.exe`
+1. Download `ChessKit Setup 0.1.0.exe` from the `dist/` folder
+2. Run the installer and follow the instructions
+3. Launch ChessKit from the Start menu or desktop shortcut
 
-## Конфигурация
+### Portable version
 
-Настройки Electron можно изменить в разделе `"build"` файла `package.json`:
+1. Copy the `dist/win-unpacked/` folder to any location
+2. Run `ChessKit.exe`
 
-- `appId` - Уникальный идентификатор приложения
-- `productName` - Название продукта
-- `directories.output` - Папка для дистрибутивов
-- `files` - Файлы для включения в сборку
-- `win`, `mac`, `linux` - Специфичные настройки для платформ
+## Configuration
 
-## Безопасность
+Electron settings can be changed in the `"build"` section of the `package.json` file:
 
-Приложение настроено с учетом лучших практик безопасности Electron:
+- `appId` - Unique application identifier
+- `productName` - Product name
+- `directories.output` - Folder for distributables
+- `files` - Files to include in the build
+- `win`, `mac`, `linux` - Platform-specific settings
 
-- ✅ `nodeIntegration: false` - Отключен доступ к Node.js из рендерера
-- ✅ `contextIsolation: true` - Изоляция контекста
-- ✅ `enableRemoteModule: false` - Отключен remote модуль
-- ✅ Preload скрипт для безопасного API
-- ✅ Правильная обработка внешних ссылок
-- ✅ Валидация навигации
+## Security
 
-## Поддерживаемые платформы
+The application is configured with Electron security best practices:
 
-- ✅ **Windows** x64 (установщик NSIS)
-- 🚧 **macOS** x64/ARM64 (DMG) - настроено, но не протестировано
-- 🚧 **Linux** x64 (AppImage) - настроено, но не протестировано
+- ✅ `nodeIntegration: false` - Disabled access to Node.js from the renderer
+- ✅ `contextIsolation: true` - Context isolation
+- ✅ `enableRemoteModule: false` - Disabled remote module
+- ✅ Preload script for secure API
+- ✅ Proper handling of external links
+- ✅ Navigation validation
 
-## Известные проблемы
+## Supported platforms
 
-1. **Медленная файловая система** - При разработке рекомендуется исключить папку проекта из антивирусного сканирования
-2. **Sentry warnings** - В dev режиме с Turbopack появляются предупреждения, которые не влияют на функциональность
-3. **Размер дистрибутива** - Финальный размер около 150MB из-за включения Chromium
+- ✅ **Windows** x64 (NSIS installer)
+- 🚧 **macOS** x64/ARM64 (DMG) - configured but not tested
+- 🚧 **Linux** x64 (AppImage) - configured but not tested
+
+## Known issues
+
+1. **Slow file system** - During development, it's recommended to exclude the project folder from antivirus scanning
+2. **Sentry warnings** - In dev mode with Turbopack, there are warnings that don't affect functionality
+3. **Distributable size** - Final size around 150MB due to Chromium inclusion
 
 ## Troubleshooting
 
-### Проблемы с запуском в dev режиме
+### Problems with launching in dev mode
+
 ```bash
-# Если wait-on зависает, попробуйте:
-npm run dev  # в одном терминале
-npm run electron  # в другом терминале после запуска dev сервера
+# If wait-on hangs, try:
+npm run dev  # in one terminal
+npm run electron  # in another terminal after the dev server starts
 ```
 
-### Ошибки сборки
+### Build errors
+
 ```bash
-# Очистите кэш и пересоберите
+# Clear cache and rebuild
 rm -rf .next dist out
 npm run build
 npm run dist
 ```
 
-## Вклад в проект
+## Contributing to the project
 
-При внесении изменений в Electron часть приложения:
+When making changes to the Electron part of the application:
 
-1. Тестируйте в dev режиме: `npm run electron-dev`
-2. Тестируйте production сборку: `npm run electron-build`
-3. Создайте и протестируйте дистрибутив: `npm run dist`
-4. Обновите документацию если необходимо
+1. Test in dev mode: `npm run electron-dev`
+2. Test the production build: `npm run electron-build`
+3. Create and test a distributable: `npm run dist`
+4. Update documentation if necessary

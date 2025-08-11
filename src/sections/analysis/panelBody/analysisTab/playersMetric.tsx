@@ -36,6 +36,8 @@ const ValueBlock = ({
   value: string | number;
   color: "white" | "black";
 }) => {
+  const displayValue = typeof value === "number" && isNaN(value) ? "-" : value;
+
   return (
     <Typography
       align="center"
@@ -51,7 +53,7 @@ const ValueBlock = ({
       border="1px solid #424242"
       noWrap
     >
-      {value}
+      {displayValue}
     </Typography>
   );
 };

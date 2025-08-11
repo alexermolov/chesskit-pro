@@ -1,6 +1,7 @@
 import { Icon } from "@iconify/react";
 import { Box, Chip, IconButton, Tooltip } from "@mui/material";
 import { useCallback } from "react";
+import { hasRealComment } from "@/lib/helpers";
 
 interface MoveElementProps {
   id: string;
@@ -44,6 +45,8 @@ export const MoveElement = ({
     [nodeId, onStartEditComment]
   );
 
+  const hasActualComment = hasRealComment(comment);
+
   return (
     <Box
       key={id}
@@ -51,15 +54,13 @@ export const MoveElement = ({
         display: "inline-flex",
         alignItems: "center",
         gap: 0.5,
-        margin: "2px 3px", // Увеличиваем отступ между ходами
-        flexShrink: 0, // Предотвращает сжатие элемента
+        margin: "2px 3px",
+        flexShrink: 0,
         ...indentStyle,
       }}
     >
       <Tooltip
-        title={`Клик - перейти к ходу, Двойной клик - ${
-          comment ? "редактировать комментарий" : "добавить комментарий"
-        }`}
+        title={`Click - go to move, Double click - ${hasActualComment ? "edit comment" : "add comment"}`}
         arrow
         enterDelay={700}
       >
@@ -102,8 +103,8 @@ export const MoveElement = ({
         />
       </Tooltip>
 
-      {/* Кнопка добавления комментария если его нет */}
-      {nodeId && !comment && (
+      {/* Add comment button if there is no real comment */}
+      {nodeId && !hasActualComment && (
         <IconButton
           size="small"
           onClick={handleAddComment}
@@ -117,7 +118,7 @@ export const MoveElement = ({
             height: "16px",
             minWidth: "16px",
           }}
-          title="Добавить комментарий"
+          title="Add comment"
         >
           <Icon icon="mdi:comment-plus" style={{ fontSize: "10px" }} />
         </IconButton>

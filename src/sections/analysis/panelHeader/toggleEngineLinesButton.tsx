@@ -1,9 +1,11 @@
 import { Icon } from "@iconify/react";
 import { Button, Typography } from "@mui/material";
 import { useAtom } from "jotai";
+import { useTranslation } from "next-i18next";
 import { showEngineLinesAtom } from "../states";
 
 export default function ToggleEngineLinesButton() {
+  const { t } = useTranslation("chess");
   const [showEngineLines, setShowEngineLines] = useAtom(showEngineLinesAtom);
 
   const handleToggle = () => {
@@ -28,7 +30,7 @@ export default function ToggleEngineLinesButton() {
       }}
     >
       <Typography fontSize="0.9em" fontWeight="500" lineHeight="1.4em">
-        {showEngineLines ? "Hide lines" : "Show lines"}
+        {showEngineLines ? t("hide_lines") : t("show_lines")}
       </Typography>
     </Button>
   );

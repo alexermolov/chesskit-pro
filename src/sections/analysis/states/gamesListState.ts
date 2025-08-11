@@ -12,10 +12,10 @@ export interface GameInfo {
   previewFen?: string;
 }
 
-// Атом для хранения списка игр
+// Atom for storing the list of games
 export const gamesListAtom = atom<GameInfo[]>([]);
 
-// Вспомогательная функция для создания GameInfo из PGN
+// Helper function for creating GameInfo from PGN
 export function createGameInfoFromPgn(
   pgn: string,
   index: number
@@ -25,10 +25,10 @@ export function createGameInfoFromPgn(
     game.loadPgn(pgn);
     const headers = game.getHeaders();
 
-    // Создаем уникальный идентификатор
+    // Create a unique identifier
     const id = `game-${index}-${Date.now()}`;
 
-    // Получаем превью позиции (например, после 10 ходов или последняя позиция, если ходов меньше)
+    // Get position preview (for example, after 10 moves or the last position if there are fewer moves)
     let previewFen = game.fen();
     const moves = game.history();
     if (moves.length > 10) {

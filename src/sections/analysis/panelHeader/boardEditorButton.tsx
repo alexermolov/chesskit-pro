@@ -3,6 +3,7 @@ import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches
 import { Icon } from "@iconify/react";
 import { Button, Typography } from "@mui/material";
 import { useAtom, useSetAtom } from "jotai";
+import { useTranslation } from "next-i18next";
 import { useCallback, useState } from "react";
 import {
   boardAtom,
@@ -13,6 +14,7 @@ import {
 } from "../states";
 
 export default function BoardEditorButton() {
+  const { t } = useTranslation("chess");
   const [open, setOpen] = useState(false);
   const [board] = useAtom(boardAtom);
 
@@ -62,7 +64,7 @@ export default function BoardEditorButton() {
         }}
       >
         <Typography fontSize="0.9em" fontWeight="500" lineHeight="1.4em">
-          Edit board
+          {t("edit_board")}
         </Typography>
       </Button>
 

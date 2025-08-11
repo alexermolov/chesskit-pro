@@ -6,7 +6,7 @@ import ClassificationTab from "@/sections/analysis/panelBody/classificationTab";
 import GraphTab from "@/sections/analysis/panelBody/graphTab";
 import PanelHeader from "@/sections/analysis/panelHeader";
 import PanelToolBar from "@/sections/analysis/panelToolbar";
-import { boardAtom, gameAtom } from "@/sections/analysis/states";
+import { boardAtom, gameAtom, gameEvalAtom } from "@/sections/analysis/states";
 import EngineSettingsButton from "@/sections/engineSettings/engineSettingsButton";
 import { Icon } from "@iconify/react";
 import {
@@ -20,40 +20,37 @@ import {
 } from "@mui/material";
 import { Chess } from "chess.js";
 import { useAtom, useAtomValue } from "jotai";
+import { GetStaticProps } from "next";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
-export default function GameAnalysis() {
-  const theme = useTheme();
+export default function Analysis() {
+  const { t } = useTranslation("chess");
   const [tab, setTab] = useState(0);
-  const isLgOrGreater = useMediaQuery(theme.breakpoints.up("lg"));
   const router = useRouter();
+  const theme = useTheme();
+  const isLgOrGreater = useMediaQuery(theme.breakpoints.up("lg"));
 
-  const { loadTempGame, getTempGameById } = useTempGamesManager();
-  const gameEval = useAtomValue(boardAtom);
   const [game] = useAtom(gameAtom);
-  const [board, setBoard] = useAtom(boardAtom);
+  const [, setBoard] = useAtom(boardAtom);
+  const gameEval = useAtomValue(gameEvalAtom);
+  const { getTempGameById, loadTempGame } = useTempGamesManager();
 
-  const showMovesTab = game.history().length > 0 || board.history().length > 0;
+  // Определяем когда показывать вкладку ходов
+  const showMovesTab = game && game.history().length > 0;
 
   useEffect(() => {
-    if (tab === 1 && !showMovesTab) setTab(0);
-    if (tab === 2 && !gameEval) setTab(0);
-  }, [showMovesTab, gameEval, tab]);
+    const resetBoard = () => {
+      setBoard(new Chess());
+    };
 
-  // Обработка параметра tempGameId для загрузки игры из временного списка
-  useEffect(() => {
-    const { tempGameId } = router.query;
-
-    if (tempGameId && typeof tempGameId === "string") {
-      const id = parseInt(tempGameId, 10);
-      const tempGame = getTempGameById(id);
-
+    // Load temp game if tempGameId is provided in URL
+    if (router.query.tempGameId) {
+      const tempGameId = Number(router.query.tempGameId);
+      const tempGame = getTempGameById(tempGameId);
       if (tempGame) {
-        // Функция для сброса доски
-        const resetBoard = () => setBoard(new Chess());
-
-        // Загружаем игру через общий хук
         loadTempGame(tempGame, resetBoard);
       }
     }
@@ -61,7 +58,7 @@ export default function GameAnalysis() {
 
   return (
     <Grid container gap={4} justifyContent="space-evenly" alignItems="start">
-      <PageTitle title="Chesskit-Pro Game Analysis" />
+      <PageTitle title={`ChessKit Pro - ${t("analysis")}`} />
 
       {/* <Grid container justifyContent="center" alignItems="center" size={12}>
         <Link href="/temp-games" passHref>
@@ -113,10 +110,8 @@ export default function GameAnalysis() {
           <PanelToolBar key="review-panel-toolbar" />
         )}
 
-        {!isLgOrGreater && !gameEval && <Divider sx={{ marginX: "5%" }} />}
-        {!isLgOrGreater && !gameEval && (
-          <PanelHeader key="analysis-panel-header" />
-        )}
+        {!isLgOrGreater && <Divider sx={{ marginX: "5%" }} />}
+        {!isLgOrGreater && <PanelHeader key="analysis-panel-header" />}
 
         {!isLgOrGreater && (
           <Box
@@ -135,7 +130,7 @@ export default function GameAnalysis() {
               sx={{ minHeight: 0 }}
             >
               <Tab
-                label="Analysis"
+                label={t("analysis")}
                 id="tab0"
                 icon={<Icon icon="mdi:magnify" height={15} />}
                 iconPosition="start"
@@ -148,7 +143,7 @@ export default function GameAnalysis() {
               />
 
               <Tab
-                label="Moves"
+                label={t("moves")}
                 id="tab1"
                 icon={<Icon icon="mdi:format-list-bulleted" height={15} />}
                 iconPosition="start"
@@ -162,7 +157,7 @@ export default function GameAnalysis() {
               />
 
               <Tab
-                label="Graph"
+                label={t("graph")}
                 id="tab2"
                 icon={<Icon icon="mdi:chart-line" height={15} />}
                 iconPosition="start"
@@ -215,3 +210,14 @@ export default function GameAnalysis() {
     </Grid>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", [
+      "common",
+      "chess",
+      "buttons",
+      "navigation",
+    ])),
+  },
+});

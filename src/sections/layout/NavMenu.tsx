@@ -10,14 +10,20 @@ import {
   ListItemText,
   Toolbar,
 } from "@mui/material";
+import { useTranslation } from "next-i18next";
 
 const MenuOptions = [
-  { text: "Play", icon: "streamline:chess-pawn", href: "/play" },
-  { text: "Analysis", icon: "streamline:magnifying-glass-solid", href: "/" },
+  { text: "play", icon: "streamline:chess-pawn", href: "/play" },
+  { text: "analysis", icon: "streamline:magnifying-glass-solid", href: "/" },
   {
-    text: "Database",
+    text: "database",
     icon: "streamline:database",
     href: "/database",
+  },
+  {
+    text: "temp_games",
+    icon: "mdi:playlist-play",
+    href: "/temp-games",
   },
 ];
 
@@ -27,6 +33,8 @@ interface Props {
 }
 
 export default function NavMenu({ open, onClose }: Props) {
+  const { t } = useTranslation("navigation");
+
   return (
     <Drawer anchor="left" open={open} onClose={onClose}>
       <Toolbar />
@@ -39,7 +47,7 @@ export default function NavMenu({ open, onClose }: Props) {
                   <ListItemIcon style={{ paddingLeft: "0.5em" }}>
                     <Icon icon={icon} height="1.5em" />
                   </ListItemIcon>
-                  <ListItemText primary={text} />
+                  <ListItemText primary={t(text)} />
                 </ListItemButton>
               </NavLink>
             </ListItem>

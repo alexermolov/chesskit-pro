@@ -3,10 +3,12 @@ import { moveLineUciToSan } from "@/lib/chess";
 import { MoveClassification } from "@/types/enums";
 import { Box, Skeleton, Stack, Typography } from "@mui/material";
 import { useAtomValue } from "jotai";
+import { useTranslation } from "next-i18next";
 import { useMemo } from "react";
 import { boardAtom, currentPositionAtom } from "../../states";
 
 export default function MoveInfo() {
+  const { t } = useTranslation("chess");
   const position = useAtomValue(currentPositionAtom);
   const board = useAtomValue(boardAtom);
 
@@ -22,6 +24,35 @@ export default function MoveInfo() {
 
     return moveLineUciToSan(lastPosition)(bestMove);
   }, [bestMove, board]);
+
+  const getMoveClassificationLabel = (
+    classification: MoveClassification
+  ): string => {
+    switch (classification) {
+      case MoveClassification.Opening:
+        return t("opening_move");
+      case MoveClassification.Forced:
+        return t("forced_move_desc");
+      case MoveClassification.Splendid:
+        return t("splendid_move");
+      case MoveClassification.Perfect:
+        return t("perfect_move");
+      case MoveClassification.Best:
+        return t("best_move_desc");
+      case MoveClassification.Excellent:
+        return t("excellent_move_desc");
+      case MoveClassification.Okay:
+        return t("okay_move");
+      case MoveClassification.Inaccuracy:
+        return t("inaccuracy_move");
+      case MoveClassification.Mistake:
+        return t("mistake_move");
+      case MoveClassification.Blunder:
+        return t("blunder_move");
+      default:
+        return "";
+    }
+  };
 
   if (board.history().length === 0) return null;
 
@@ -80,7 +111,10 @@ export default function MoveInfo() {
             san={position.lastMove?.san ?? ""}
             color={position.lastMove?.color ?? "w"}
             additionalText={
-              " is " + moveClassificationLabels[moveClassification]
+              " " +
+              t("is") +
+              " " +
+              getMoveClassificationLabel(moveClassification)
             }
           />
         </Stack>
@@ -107,23 +141,10 @@ export default function MoveInfo() {
             }}
             san={bestMoveSan}
             color={position.lastMove?.color ?? "w"}
-            additionalText=" was the best move"
+            additionalText={" " + t("was_the_best_move")}
           />
         </Stack>
       )}
     </Stack>
   );
 }
-
-const moveClassificationLabels: Record<MoveClassification, string> = {
-  [MoveClassification.Opening]: "an opening move",
-  [MoveClassification.Forced]: "forced",
-  [MoveClassification.Splendid]: "splendid !!",
-  [MoveClassification.Perfect]: "the only good move !",
-  [MoveClassification.Best]: "the best move",
-  [MoveClassification.Excellent]: "excellent",
-  [MoveClassification.Okay]: "an okay move",
-  [MoveClassification.Inaccuracy]: "an inaccuracy",
-  [MoveClassification.Mistake]: "a mistake",
-  [MoveClassification.Blunder]: "a blunder",
-};

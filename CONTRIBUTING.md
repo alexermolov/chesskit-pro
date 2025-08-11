@@ -5,17 +5,20 @@ Thank you for your interest in the ChessKit project! We welcome all forms of con
 ## 🚀 Quick Start
 
 1. **Fork the repository**
+
    ```bash
    git clone https://github.com/alexermolov/chesskit-pro.git
    cd chesskit-pro
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Run the dev server**
+
    ```bash
    npm run dev
    ```
@@ -44,11 +47,13 @@ The project is built with modern technologies:
 ## 🎯 How to Contribute
 
 ### 1. Choose a task
+
 - Browse [Issues](https://github.com/alexermolov/chesskit-pro/issues)
 - Look for tasks labeled `good first issue` or `help wanted`
 - Or suggest your own improvement idea
 
 ### 2. Create a branch
+
 ```bash
 git checkout -b feature/feature-name
 # or
@@ -56,12 +61,15 @@ git checkout -b fix/bug-description
 ```
 
 ### 3. Development
+
 - Follow existing code patterns
 - Write readable and documented code
 - Test changes locally
 
 ### 4. Commits
+
 Use clear commit messages:
+
 ```bash
 git commit -m "feat: add opening analysis"
 git commit -m "fix: correct rating calculation error"
@@ -69,6 +77,7 @@ git commit -m "docs: update README"
 ```
 
 ### 5. Pull Request
+
 - Create a PR to the main repository
 - Describe changes and their purpose
 - Attach screenshots if necessary
@@ -96,16 +105,19 @@ public/
 ## 🎨 Code Style
 
 ### TypeScript
+
 - Use strict typing
 - Avoid `any`, prefer typed interfaces
 - Export types from `src/types/`
 
 ### React Components
+
 - Functional components with hooks
 - Use `React.memo` for optimization
 - Props destructuring
 
 ### Naming
+
 - **Files**: camelCase for utilities, PascalCase for components
 - **Variables**: camelCase
 - **Constants**: UPPER_SNAKE_CASE
@@ -129,18 +141,21 @@ npm run electron-build
 ## 📦 Areas for Contribution
 
 ### 🎯 Priority Areas
+
 - **Game Analysis**: improving evaluation algorithms
 - **UI/UX**: enhancing interface usability
 - **Performance**: optimizing engine performance
 - **Mobile Version**: tablet adaptation
 
 ### 🔧 Technical Improvements
+
 - Test coverage
 - Bundle optimization
 - Accessibility (a11y)
 - Internationalization (i18n)
 
 ### 🎨 Design and Content
+
 - Themes
 - Sound effects
 - Piece sets

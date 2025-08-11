@@ -19,6 +19,7 @@ import {
   TextField,
 } from "@mui/material";
 import { useAtomLocalStorage } from "@/hooks/useAtomLocalStorage";
+import { useTranslation } from "next-i18next";
 import { useAtom, useSetAtom } from "jotai";
 import {
   engineEloAtom,
@@ -41,6 +42,7 @@ interface Props {
 }
 
 export default function GameSettingsDialog({ open, onClose }: Props) {
+  const { t } = useTranslation("chess");
   const [engineElo, setEngineElo] = useAtomLocalStorage(
     "engine-elo",
     engineEloAtom
@@ -68,14 +70,14 @@ export default function GameSettingsDialog({ open, onClose }: Props) {
         white: {
           name:
             playerColor === Color.White
-              ? "You"
+              ? t("you")
               : ENGINE_LABELS[engineName].small,
           rating: playerColor === Color.White ? undefined : engineElo,
         },
         black: {
           name:
             playerColor === Color.Black
-              ? "You"
+              ? t("you")
               : ENGINE_LABELS[engineName].small,
           rating: playerColor === Color.Black ? undefined : engineElo,
         },
@@ -86,7 +88,7 @@ export default function GameSettingsDialog({ open, onClose }: Props) {
       setParsingError(
         error instanceof Error
           ? `${error.message} !`
-          : "Unknown error while parsing input !"
+          : t("unknown_error_parsing")
       );
       return;
     }
@@ -120,15 +122,14 @@ export default function GameSettingsDialog({ open, onClose }: Props) {
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle marginY={1} variant="h5">
-        Set game parameters
+        {t("set_game_parameters")}
       </DialogTitle>
       <DialogContent sx={{ paddingBottom: 0 }}>
         <Typography>
-          {ENGINE_LABELS[DEFAULT_ENGINE].small} is the default engine if your
-          device support its requirements. It offers the best balance between
-          speed and strength. {ENGINE_LABELS[STRONGEST_ENGINE].small} is the
-          strongest engine available, note that it requires a one time download
-          of 75MB.
+          {ENGINE_LABELS[DEFAULT_ENGINE].small}{" "}
+          {t("engine_default_description")}{" "}
+          {ENGINE_LABELS[STRONGEST_ENGINE].small}{" "}
+          {t("engine_strongest_description")}
         </Typography>
         <Grid
           marginTop={4}
@@ -140,12 +141,14 @@ export default function GameSettingsDialog({ open, onClose }: Props) {
         >
           <Grid container justifyContent="center" size={12}>
             <FormControl variant="outlined">
-              <InputLabel id="dialog-select-label">Bot's engine</InputLabel>
+              <InputLabel id="dialog-select-label">
+                {t("bot_engine")}
+              </InputLabel>
               <Select
                 labelId="dialog-select-label"
                 id="dialog-select"
                 displayEmpty
-                input={<OutlinedInput label="Engine" />}
+                input={<OutlinedInput label={t("bot_engine")} />}
                 value={engineName}
                 onChange={(e) => setEngineName(e.target.value as EngineName)}
                 sx={{ width: 280, maxWidth: "100%" }}
@@ -164,7 +167,7 @@ export default function GameSettingsDialog({ open, onClose }: Props) {
           </Grid>
 
           <Slider
-            label="Bot Elo rating"
+            label={t("bot_elo_rating")}
             value={engineElo}
             setValue={setEngineElo}
             min={1320}
@@ -188,15 +191,15 @@ export default function GameSettingsDialog({ open, onClose }: Props) {
               }
               label={
                 playerColor === Color.White
-                  ? "You play as White"
-                  : "You play as Black"
+                  ? t("you_play_as_white")
+                  : t("you_play_as_black")
               }
             />
           </FormGroup>
 
           <FormControl fullWidth>
             <TextField
-              label="Optional starting position (FEN or PGN)"
+              label={t("optional_starting_position")}
               variant="outlined"
               multiline
               value={startingPositionInput}
@@ -219,10 +222,10 @@ export default function GameSettingsDialog({ open, onClose }: Props) {
           sx={{ marginRight: 2 }}
           onClick={handleClose}
         >
-          Cancel
+          {t("cancel")}
         </Button>
         <Button variant="contained" onClick={handleGameStart}>
-          Start game
+          {t("start_game")}
         </Button>
       </DialogActions>
     </Dialog>

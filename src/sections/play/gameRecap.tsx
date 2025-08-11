@@ -4,9 +4,12 @@ import { Button, Grid2 as Grid, Typography } from "@mui/material";
 import { Color } from "@/types/enums";
 import { setGameHeaders } from "@/lib/chess";
 import { useGameDatabase } from "@/hooks/useGameDatabase";
+import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
+import { safeNavigate } from "@/lib/electronUtils";
 
 export default function GameRecap() {
+  const { t } = useTranslation("chess");
   const game = useAtomValue(gameAtom);
   const playerColor = useAtomValue(playerColorAtom);
   const isGameInProgress = useAtomValue(isGameInProgressAtom);
@@ -19,14 +22,17 @@ export default function GameRecap() {
     if (game.isCheckmate()) {
       const winnerColor = game.turn() === "w" ? Color.Black : Color.White;
       const winnerLabel = winnerColor === playerColor ? "You" : "Stockfish";
-      return `${winnerLabel} won by checkmate !`;
+      return winnerLabel === "You"
+        ? t("you_won_by_checkmate")
+        : t("stockfish_won_by_checkmate");
     }
-    if (game.isInsufficientMaterial()) return "Draw by insufficient material";
-    if (game.isStalemate()) return "Draw by stalemate";
-    if (game.isThreefoldRepetition()) return "Draw by threefold repetition";
-    if (game.isDraw()) return "Draw by fifty-move rule";
+    if (game.isInsufficientMaterial())
+      return t("draw_by_insufficient_material");
+    if (game.isStalemate()) return t("draw_by_stalemate");
+    if (game.isThreefoldRepetition()) return t("draw_by_threefold_repetition");
+    if (game.isDraw()) return t("draw_by_fifty_move_rule");
 
-    return "You resigned";
+    return t("you_resigned");
   };
 
   const handleOpenGameAnalysis = async () => {
@@ -35,7 +41,8 @@ export default function GameRecap() {
     });
     const gameId = await addGame(gameToAnalysis);
 
-    router.push({ pathname: "/", query: { gameId } });
+    // Используем безопасную навигацию для Electron
+    safeNavigate(router, "/", { gameId });
   };
 
   return (
@@ -51,7 +58,7 @@ export default function GameRecap() {
       </Grid>
 
       <Button variant="outlined" onClick={handleOpenGameAnalysis}>
-        Open game analysis
+        {t("open_game_analysis")}
       </Button>
     </Grid>
   );

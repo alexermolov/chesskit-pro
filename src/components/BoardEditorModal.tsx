@@ -16,6 +16,7 @@ import { Chess } from "chess.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Chessboard } from "react-chessboard";
 import { Square } from "react-chessboard/dist/chessboard/types";
+import { useTranslation } from "next-i18next";
 
 interface BoardEditorModalProps {
   open: boolean;
@@ -33,6 +34,8 @@ export default function BoardEditorModal({
   onLoadPosition,
   initialFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
 }: BoardEditorModalProps) {
+  const { t } = useTranslation("chess");
+  const { t: tCommon } = useTranslation("common");
   const [editableGame, setEditableGame] = useState(() => new Chess(initialFen));
   const [fenInput, setFenInput] = useState(initialFen);
   const [error, setError] = useState<string | null>(null);
@@ -42,22 +45,25 @@ export default function BoardEditorModal({
   const [castling, setCastling] = useState("KQkq");
 
   // Helper function to validate board state
-  const validateBoardState = useCallback((game: Chess) => {
-    const squares = game.board().flat();
-    const whiteKing = squares.filter(
-      (square) => square && square.type === "k" && square.color === "w"
-    ).length;
-    const blackKing = squares.filter(
-      (square) => square && square.type === "k" && square.color === "b"
-    ).length;
+  const validateBoardState = useCallback(
+    (game: Chess) => {
+      const squares = game.board().flat();
+      const whiteKing = squares.filter(
+        (square) => square && square.type === "k" && square.color === "w"
+      ).length;
+      const blackKing = squares.filter(
+        (square) => square && square.type === "k" && square.color === "b"
+      ).length;
 
-    if (whiteKing === 0) return "White king is missing";
-    if (blackKing === 0) return "Black king is missing";
-    if (whiteKing > 1) return "Too many white kings";
-    if (blackKing > 1) return "Too many black kings";
+      if (whiteKing === 0) return t("white_king_missing");
+      if (blackKing === 0) return t("black_king_missing");
+      if (whiteKing > 1) return t("too_many_white_kings");
+      if (blackKing > 1) return t("too_many_black_kings");
 
-    return null;
-  }, []);
+      return null;
+    },
+    [t]
+  );
 
   // Update state when modal opens with new FEN
   useEffect(() => {
@@ -71,21 +77,24 @@ export default function BoardEditorModal({
         setCastling(fenParts[2] || "KQkq");
         setError(null);
       } catch {
-        setError("Invalid initial FEN");
+        setError(t("invalid_initial_fen"));
       }
     }
-  }, [open, initialFen]);
+  }, [open, initialFen, t]);
 
-  const handleFenChange = useCallback((value: string) => {
-    setFenInput(value);
-    try {
-      const testGame = new Chess(value);
-      setEditableGame(testGame);
-      setError(null);
-    } catch {
-      setError("Invalid FEN string");
-    }
-  }, []);
+  const handleFenChange = useCallback(
+    (value: string) => {
+      setFenInput(value);
+      try {
+        const testGame = new Chess(value);
+        setEditableGame(testGame);
+        setError(null);
+      } catch {
+        setError(t("invalid_fen_string"));
+      }
+    },
+    [t]
+  );
 
   const updateGameFromBoard = useCallback(
     (gameToUpdate: Chess) => {
@@ -108,13 +117,15 @@ export default function BoardEditorModal({
         } catch (validationError) {
           // If FEN is invalid, still update the input but show error
           setFenInput(newFen);
-          setError("Invalid position: " + (validationError as Error).message);
+          setError(
+            t("invalid_position") + ": " + (validationError as Error).message
+          );
         }
       } catch {
-        setError("Error updating position");
+        setError(t("error_updating_position"));
       }
     },
-    [activeColor, castling, validateBoardState]
+    [activeColor, castling, validateBoardState, t]
   );
 
   const handlePieceDrop = useCallback(
@@ -149,11 +160,11 @@ export default function BoardEditorModal({
           return true;
         }
       } catch {
-        setError("Invalid move");
+        setError(t("invalid_move"));
       }
       return false;
     },
-    [editableGame, updateGameFromBoard]
+    [editableGame, updateGameFromBoard, t]
   );
 
   const handleSquareClick = useCallback(
@@ -181,10 +192,10 @@ export default function BoardEditorModal({
         setEditableGame(newGame);
         updateGameFromBoard(newGame);
       } catch {
-        setError("Error placing piece");
+        setError(t("error_placing_piece"));
       }
     },
-    [editableGame, selectedPiece, selectedColor, updateGameFromBoard]
+    [editableGame, selectedPiece, selectedColor, updateGameFromBoard, t]
   );
 
   const handleSquareRightClick = useCallback(
@@ -210,10 +221,10 @@ export default function BoardEditorModal({
         setEditableGame(newGame);
         updateGameFromBoard(newGame);
       } catch {
-        setError("Error removing piece");
+        setError(t("error_removing_piece"));
       }
     },
-    [editableGame, updateGameFromBoard]
+    [editableGame, updateGameFromBoard, t]
   );
 
   const handleClearBoard = useCallback(() => {
@@ -223,9 +234,9 @@ export default function BoardEditorModal({
       setEditableGame(newGame);
       updateGameFromBoard(newGame);
     } catch {
-      setError("Error clearing board");
+      setError(t("error_clearing_board"));
     }
-  }, [updateGameFromBoard]);
+  }, [updateGameFromBoard, t]);
 
   const handleStartingPosition = useCallback(() => {
     const startingFen =
@@ -253,10 +264,12 @@ export default function BoardEditorModal({
         onLoadPosition(fenInput);
         onClose();
       } catch (validationError) {
-        setError("Invalid position: " + (validationError as Error).message);
+        setError(
+          t("invalid_position") + ": " + (validationError as Error).message
+        );
       }
     }
-  }, [error, fenInput, onLoadPosition, onClose, validateBoardState]);
+  }, [error, fenInput, onLoadPosition, onClose, validateBoardState, t]);
 
   const boardStyle = useMemo(
     () => ({
@@ -267,12 +280,12 @@ export default function BoardEditorModal({
   );
 
   const pieceOptions = [
-    { value: "p", label: "Pawn" },
-    { value: "n", label: "Knight" },
-    { value: "b", label: "Bishop" },
-    { value: "r", label: "Rook" },
-    { value: "q", label: "Queen" },
-    { value: "k", label: "King" },
+    { value: "p", label: t("pawn") },
+    { value: "n", label: t("knight") },
+    { value: "b", label: t("bishop") },
+    { value: "r", label: t("rook") },
+    { value: "q", label: t("queen") },
+    { value: "k", label: t("king") },
   ];
 
   return (
@@ -287,15 +300,13 @@ export default function BoardEditorModal({
         },
       }}
     >
-      <DialogTitle>Board Editor</DialogTitle>
+      <DialogTitle>{t("board_editor")}</DialogTitle>
 
       <DialogContent>
         <Grid container spacing={3}>
           <Grid size={12}>
             <Alert severity="info" sx={{ mb: 2 }}>
-              Select a piece from the palette, then left-click on the board to
-              place it. Right-click on the board to remove pieces. You can also
-              drag pieces to move them.
+              {t("board_editor_instructions")}
             </Alert>
           </Grid>
 
@@ -318,12 +329,12 @@ export default function BoardEditorModal({
 
             <Grid size={4}>
               <Box display="flex" flexDirection="column" gap={2}>
-                <Typography variant="subtitle1">Select Piece</Typography>
+                <Typography variant="subtitle1">{t("select_piece")}</Typography>
 
                 {/* White pieces palette */}
                 <Box>
                   <Typography variant="body2" sx={{ mb: 1 }}>
-                    White Pieces
+                    {t("white_pieces")}
                   </Typography>
                   <Box display="flex" gap={1} flexWrap="wrap">
                     {pieceOptions.map((piece) => (
@@ -376,7 +387,7 @@ export default function BoardEditorModal({
                 {/* Black pieces palette */}
                 <Box>
                   <Typography variant="body2" sx={{ mb: 1 }}>
-                    Black Pieces
+                    {t("black_pieces")}
                   </Typography>
                   <Box display="flex" gap={1} flexWrap="wrap">
                     {pieceOptions.map((piece) => (
@@ -426,7 +437,7 @@ export default function BoardEditorModal({
                   </Box>
                 </Box>
 
-                <Typography variant="h6">Position Settings</Typography>
+                <Typography variant="h6">{t("position_settings")}</Typography>
                 <ToggleButtonGroup
                   value={activeColor}
                   exclusive
@@ -434,17 +445,17 @@ export default function BoardEditorModal({
                   size="small"
                   fullWidth
                 >
-                  <ToggleButton value="w">White to move</ToggleButton>
-                  <ToggleButton value="b">Black to move</ToggleButton>
+                  <ToggleButton value="w">{t("white_to_move")}</ToggleButton>
+                  <ToggleButton value="b">{t("black_to_move")}</ToggleButton>
                 </ToggleButtonGroup>
 
                 <TextField
-                  label="Castling rights"
+                  label={t("castling_rights")}
                   value={castling}
                   onChange={(e) => setCastling(e.target.value)}
                   size="small"
                   fullWidth
-                  helperText="e.g., KQkq, Kq, -, etc."
+                  helperText={t("castling_rights_help")}
                 />
               </Box>
             </Grid>
@@ -457,14 +468,14 @@ export default function BoardEditorModal({
                 size="small"
                 onClick={handleStartingPosition}
               >
-                Starting Position
+                {t("starting_position")}
               </Button>
               <Button
                 variant="outlined"
                 size="small"
                 onClick={handleClearBoard}
               >
-                Clear Board
+                {t("clear_board")}
               </Button>
             </Box>
           </Grid>
@@ -478,7 +489,7 @@ export default function BoardEditorModal({
               multiline
               rows={2}
               error={!!error}
-              helperText={error || "Enter a valid FEN string"}
+              helperText={error || t("fen_help")}
               variant="outlined"
             />
           </Grid>
@@ -487,14 +498,14 @@ export default function BoardEditorModal({
 
       <DialogActions>
         <Button onClick={onClose} color="secondary">
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button
           onClick={handleLoadPosition}
           variant="contained"
           disabled={!!error}
         >
-          Load Position
+          {t("board_editor_load_position")}
         </Button>
       </DialogActions>
     </Dialog>

@@ -1,7 +1,6 @@
 import BranchSelectionModal from "@/components/BranchSelectionModal";
 import { useBranchNavigation } from "@/hooks/useBranchNavigation";
 import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
-import { useChessActionsWithHistory } from "@/hooks/useChessActionsWithHistory";
 import { MoveTreeUtils } from "@/types/moveTree";
 import { Icon } from "@iconify/react";
 import {
@@ -14,36 +13,27 @@ import {
 } from "@mui/material";
 import { Move } from "chess.js";
 import { useAtomValue } from "jotai";
+import { useTranslation } from "next-i18next";
 import { useCallback, useEffect, useState } from "react";
 import { boardAtom, gameAtom, moveTreeAtom } from "../states";
 import AddToTempListButton from "./addToTempListButton";
 import FlipBoardButton from "./flipBoardButton";
 import GoToLastPositionButton from "./goToLastPositionButton";
 import NextMoveButton from "./nextMoveButton";
-import RedoMoveButton from "./redoMoveButton";
 import SaveAndNewButton from "./saveAndNewButton";
 import SaveButton from "./saveButton";
 
 export default function PanelToolBar() {
+  const { t } = useTranslation("chess");
   const board = useAtomValue(boardAtom);
   const moveTree = useAtomValue(moveTreeAtom);
-  const [useBranches, setUseBranches] = useState(true);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  // Хуки для обеих систем
-  const {
-    resetToStartingPosition: resetBoard,
-    undoMove: undoBoardMove,
-    canUndo: canUndoLinear,
-  } = useChessActionsWithHistory(boardAtom);
+  // Hooks for the branch system
+  const { undoMove, canUndo, currentMoves, goToNode } =
+    useChessActionsWithBranches(boardAtom);
 
-  const {
-    undoMove: undoBranchedMove,
-    canUndo: canUndoBranched,
-    currentMoves,
-  } = useChessActionsWithBranches(boardAtom);
-
-  // Хук для навигации с модальным окном
+  // Hook for navigation with modal window
   const {
     isModalOpen,
     availableBranches,
@@ -53,16 +43,13 @@ export default function PanelToolBar() {
     currentMove,
   } = useBranchNavigation(boardAtom);
 
-  const canUndo = useBranches ? canUndoBranched : canUndoLinear;
-  const undoMove = useBranches ? undoBranchedMove : undoBoardMove;
-
-  // Получаем историю ходов для контекстного меню
-  const recentMoves = useBranches ? currentMoves.slice(-5) : []; // Последние 5 ходов
+  // Get move history for context menu
+  const recentMoves = currentMoves.slice(-5); // Last 5 moves
 
   const boardHistory = board.history();
   const game = useAtomValue(gameAtom);
 
-  // Функция для получения PGN с ветками
+  // Function to get PGN with branches
   const getPgnWithBranches = useCallback(() => {
     const hasMovesInTree = Object.keys(moveTree.nodes).length > 1;
     if (hasMovesInTree) {
@@ -71,38 +58,38 @@ export default function PanelToolBar() {
     return game.pgn();
   }, [moveTree, game]);
 
-  // Функция для скачивания PGN файла
+  // Function to download PGN file
   const downloadPgn = useCallback(() => {
     const pgn = getPgnWithBranches();
     if (!pgn) return;
 
-    // Получаем данные заголовков для формирования имени файла
+    // Get header data to form filename
     const headers = game.getHeaders();
     let fileName = "game.pgn";
 
-    // Пытаемся сформировать более информативное имя файла из заголовков
+    // Try to form a more informative filename from headers
     if (headers.White && headers.Black && headers.Date) {
-      const date = headers.Date.replace(/\./g, "-").split("?")[0]; // Убираем вопросы из даты
+      const date = headers.Date.replace(/\./g, "-").split("?")[0]; // Remove question marks from date
       fileName = `${headers.White} vs ${headers.Black} ${date}.pgn`;
     } else if (headers.Event) {
       fileName = `${headers.Event}.pgn`;
     }
 
-    // Создаем объект Blob с текстом PGN
+    // Create a Blob object with PGN text
     const blob = new Blob([pgn], { type: "text/plain" });
 
-    // Создаем временную ссылку для скачивания
+    // Create a temporary link for download
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = fileName;
 
-    // Добавляем ссылку в DOM, запускаем клик и удаляем
+    // Add link to DOM, trigger click and remove
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
 
-    // Освобождаем URL
+    // Free the URL
     URL.revokeObjectURL(url);
   }, [getPgnWithBranches, game]);
 
@@ -112,15 +99,20 @@ export default function PanelToolBar() {
     }
   }, [canUndo, undoMove]);
 
-  // Обработка правого клика для показа истории
+  // Function to go to the beginning of the main line (tree root)
+  const goToStartPosition = useCallback(() => {
+    goToNode(moveTree.rootId);
+  }, [goToNode, moveTree.rootId]);
+
+  // Handle right click to show history
   const handleRightClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
-      if (useBranches && recentMoves.length > 1) {
+      if (recentMoves.length > 1) {
         event.preventDefault();
         setAnchorEl(event.currentTarget);
       }
     },
-    [useBranches, recentMoves.length]
+    [recentMoves.length]
   );
 
   const handleCloseMenu = () => {
@@ -129,28 +121,23 @@ export default function PanelToolBar() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      // Не обрабатываем клавиши если открыто модальное окно выбора веток
+      // Don't process keys if the branch selection modal is open
       if (isModalOpen) {
         return;
       }
 
       if (e.key === "ArrowLeft") {
         if (canUndo) undoMove();
-      } else if (e.key === "ArrowRight" && useBranches) {
-        // Используем новую функцию redoMove с поддержкой модального окна
+      } else if (e.key === "ArrowRight") {
+        // Use redoMove function with modal support
         redoMoveWithModal();
       } else if (e.key === "ArrowDown") {
-        resetBoard();
+        goToStartPosition();
       }
-      // Добавляем поддержку Ctrl+Z для отмены
+      // Add support for Ctrl+Z for undo
       else if (e.ctrlKey && e.key === "z" && !e.shiftKey) {
         e.preventDefault();
         handleUndoMove();
-      }
-      // Ctrl+B для переключения режимов
-      else if (e.ctrlKey && e.key === "b") {
-        e.preventDefault();
-        setUseBranches(!useBranches);
       }
     };
 
@@ -161,27 +148,24 @@ export default function PanelToolBar() {
     };
   }, [
     undoMove,
-    resetBoard,
+    goToStartPosition,
     canUndo,
     handleUndoMove,
-    useBranches,
     isModalOpen,
     redoMoveWithModal,
   ]);
 
-  const undoTooltipTitle = useBranches
-    ? `Go to previous move (Ctrl+Z) | Ветки: ${recentMoves.length > 1 ? "ПКМ для истории" : "нет истории"} | Ctrl+B: переключить режим`
-    : "Go to previous move (Ctrl+Z) | Ctrl+B: переключить на режим веток";
+  const undoTooltipTitle = `${t("go_to_previous_move")} (Ctrl+Z) | ${recentMoves.length > 1 ? t("right_click_for_history") : t("no_history")}`;
 
   return (
     <>
       <Grid container justifyContent="center" alignItems="center" size={12}>
         <FlipBoardButton />
 
-        <Tooltip title="Reset board">
+        <Tooltip title={t("reset_board")}>
           <Grid>
             <IconButton
-              onClick={() => resetBoard()}
+              onClick={goToStartPosition}
               disabled={boardHistory.length === 0}
               sx={{ paddingX: 1.2, paddingY: 0.5 }}
             >
@@ -196,24 +180,17 @@ export default function PanelToolBar() {
               onClick={handleUndoMove}
               onContextMenu={handleRightClick}
               disabled={!canUndo}
-              sx={{
-                paddingX: 1.2,
-                paddingY: 0.5,
-                backgroundColor: useBranches ? "action.hover" : "transparent",
-              }}
+              sx={{ paddingX: 1.2, paddingY: 0.5 }}
             >
-              <Icon icon="ri:arrow-left-s-line" height={30} />
+              <Icon icon="ri:arrow-left-line" height={30} />
             </IconButton>
           </Grid>
         </Tooltip>
 
-        <RedoMoveButton />
-
         <NextMoveButton />
-
         <GoToLastPositionButton isModalOpen={isModalOpen} />
 
-        <Tooltip title="Copy PGN">
+        <Tooltip title={t("copy_pgn")}>
           <Grid>
             <IconButton
               disabled={
@@ -230,7 +207,7 @@ export default function PanelToolBar() {
           </Grid>
         </Tooltip>
 
-        <Tooltip title="Download PGN">
+        <Tooltip title={t("download_pgn")}>
           <Grid>
             <IconButton
               disabled={
@@ -246,26 +223,24 @@ export default function PanelToolBar() {
         </Tooltip>
 
         <SaveButton />
-
         <SaveAndNewButton />
-
         <AddToTempListButton />
       </Grid>
 
-      {/* Контекстное меню для истории ходов */}
+      {/* Context menu for move history */}
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleCloseMenu}
       >
         <MenuItem disabled>
-          <Typography variant="caption">Перейти к ходу:</Typography>
+          <Typography variant="caption">{t("go_to_move")}:</Typography>
         </MenuItem>
         {recentMoves.reverse().map((move: Move, index: number) => (
           <MenuItem
             key={`move-${index}`}
             onClick={() => {
-              // Переход к позиции через количество отмен
+              // Go to position through a number of undos
               const stepsBack = index + 1;
               for (let i = 0; i < stepsBack; i++) {
                 if (canUndo) undoMove();
@@ -274,13 +249,13 @@ export default function PanelToolBar() {
             }}
           >
             {index === 0
-              ? "Текущий ход"
-              : `${recentMoves.length - index}. ${move.san || "ход"}`}
+              ? t("current_move")
+              : `${recentMoves.length - index}. ${move.san || "move"}`}
           </MenuItem>
         ))}
       </Menu>
 
-      {/* Модальное окно для выбора ветки */}
+      {/* Modal window for branch selection */}
       <BranchSelectionModal
         open={isModalOpen}
         onClose={closeBranchModal}

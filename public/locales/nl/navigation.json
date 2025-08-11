@@ -1,0 +1,23 @@
+{
+  "home": "Home",
+  "play": "Spelen",
+  "database": "Database",
+  "temp_games": "Tijdelijke partijen",
+  "settings": "Instellingen",
+  "about": "Over",
+  "help": "Help",
+  "load_game": "Laad partij",
+  "new_game": "Nieuwe partij",
+  "analysis": "Analyse",
+  "editor": "Editor",
+  "back": "Terug",
+  "forward": "Vooruit",
+  "menu": "Menu",
+  "close": "Sluiten",
+  "preferences": "Voorkeuren",
+  "engine_settings": "Engine-instellingen",
+  "board_settings": "Bordinstellingen",
+  "appearance": "Uiterlijk",
+  "language": "Taal",
+  "theme": "Thema"
+}

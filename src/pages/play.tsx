@@ -6,13 +6,17 @@ import GameSettingsButton from "@/sections/play/gameSettings/gameSettingsButton"
 import { isGameInProgressAtom } from "@/sections/play/states";
 import { Grid2 as Grid } from "@mui/material";
 import { useAtomValue } from "jotai";
+import { GetStaticProps } from "next";
+import { useTranslation } from "next-i18next";
+import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 
 export default function Play() {
+  const { t } = useTranslation("chess");
   const isGameInProgress = useAtomValue(isGameInProgressAtom);
 
   return (
     <Grid container gap={4} justifyContent="space-evenly" alignItems="start">
-      <PageTitle title="Chesskit-Pro Play vs Stockfish" />
+      <PageTitle title={`ChessKit Pro - ${t("play")}`} />
 
       <Board />
 
@@ -47,3 +51,14 @@ export default function Play() {
     </Grid>
   );
 }
+
+export const getStaticProps: GetStaticProps = async ({ locale }) => ({
+  props: {
+    ...(await serverSideTranslations(locale ?? "en", [
+      "common",
+      "chess",
+      "buttons",
+      "navigation",
+    ])),
+  },
+});

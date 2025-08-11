@@ -21,11 +21,13 @@ import {
 } from "@mui/material";
 import { useAtomValue, useSetAtom } from "jotai";
 import Link from "next/link";
+import { useTranslation } from "next-i18next";
 import { useCallback, useState } from "react";
 import { gameAtom, gameEvalAtom } from "../../../states";
 import { GameInfo, gamesListAtom } from "../../../states/gamesListState";
 
 export default function GamesPanel() {
+  const { t } = useTranslation(["common", "chess"]);
   const gamesList = useAtomValue(gamesListAtom);
   const { tempGamesList, loadTempGame, exportTempListToPgn, clearTempList } =
     useTempGamesManager();
@@ -63,10 +65,10 @@ export default function GamesPanel() {
   const handleConfirmClear = useCallback(() => {
     clearTempList();
     setClearConfirmOpen(false);
-    setSnackbarMessage("Temporary games list cleared");
+    setSnackbarMessage(t("common:list_cleared"));
     setSnackbarSeverity("info");
     setSnackbarOpen(true);
-  }, [clearTempList]);
+  }, [clearTempList, t]);
 
   // Обновленная функция загрузки игры
   const handleLoadGame = useCallback(
@@ -92,8 +94,7 @@ export default function GamesPanel() {
       return (
         <Box sx={{ p: 3, textAlign: "center", height: "100%" }}>
           <Typography variant="body1" color="text.secondary" component="div">
-            No games available. Load a PGN file containing multiple games to see
-            them here.
+            {t("common:no_games_available")}
           </Typography>
         </Box>
       );
@@ -102,7 +103,7 @@ export default function GamesPanel() {
     return (
       <Box sx={{ height: "100%", overflow: "auto", p: 2 }}>
         <Typography variant="h6" component="div" sx={{ mb: 2 }}>
-          Loaded Games ({gamesList.length})
+          {t("common:loaded_games")} ({gamesList.length})
         </Typography>
 
         {gamesList.map((game) => (
@@ -138,7 +139,9 @@ export default function GamesPanel() {
                 sx={{ mt: 0.5 }}
               >
                 {game.result} •{" "}
-                {game.date ? formatDate(new Date(game.date)) : "No date"}
+                {game.date
+                  ? formatDate(new Date(game.date))
+                  : t("common:no_date")}
               </Typography>
 
               {game.headers.Event && (
@@ -158,7 +161,7 @@ export default function GamesPanel() {
               size="small"
               onClick={() => handleLoadGame(game)}
             >
-              Загрузить
+              {t("common:load")}
             </Button>
           </Box>
         ))}
@@ -172,25 +175,23 @@ export default function GamesPanel() {
       return (
         <Box sx={{ p: 3, textAlign: "center", height: "100%" }}>
           <Typography variant="body1" color="text.secondary" component="div">
-            No temporary games available. Add games to the temporary list to see
-            them here.
+            {t("common:no_temp_games")}
           </Typography>
           <Box sx={{ mt: 2 }}>
             <Typography variant="body2" color="text.secondary" component="div">
-              Use the <Icon icon="mdi:playlist-plus" inline={true} /> button in
-              the toolbar to add the current game to the list.
+              {t("common:use_add_button_tooltip")}
             </Typography>
           </Box>
           <Box sx={{ mt: 3 }}>
-            <Link href="/temp-games" passHref>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<Icon icon="mdi:playlist-play" />}
-              >
-                Go to Temp Games Page
-              </Button>
-            </Link>
+            <Button
+              component={Link}
+              href="/temp-games"
+              variant="outlined"
+              size="small"
+              startIcon={<Icon icon="mdi:playlist-play" />}
+            >
+              {t("common:go_to_temp_games")}
+            </Button>
           </Box>
         </Box>
       );
@@ -207,32 +208,34 @@ export default function GamesPanel() {
           }}
         >
           <Typography variant="h6" component="div">
-            Temporary Games ({tempGamesList.length})
+            {t("common:temp_games_list")} ({tempGamesList.length})
           </Typography>
           <ButtonGroup variant="outlined" size="small">
             {/* Новая кнопка очистки с подтверждением */}
-            <Tooltip title="Clear all temporary games">
+            <Tooltip title={t("common:clear_all_tooltip")}>
               <Button
                 onClick={handleOpenClearConfirm}
                 startIcon={<Icon icon="mdi:delete-sweep" />}
                 color="error"
               >
-                Clear
+                {t("common:clear")}
               </Button>
             </Tooltip>
-            <Tooltip title="Export all games to PGN file">
+            <Tooltip title={t("common:export_all_tooltip")}>
               <Button
                 onClick={handleExportAllTempGames}
                 startIcon={<Icon icon="mdi:file-export" />}
               >
-                Export
+                {t("common:export")}
               </Button>
             </Tooltip>
-            <Link href="/temp-games" passHref>
-              <Button startIcon={<Icon icon="mdi:playlist-play" />}>
-                Full List
-              </Button>
-            </Link>
+            <Button
+              component={Link}
+              href="/temp-games"
+              startIcon={<Icon icon="mdi:playlist-plus" />}
+            >
+              {t("navigation:temp_games")}
+            </Button>
           </ButtonGroup>
         </Box>
 
@@ -259,7 +262,8 @@ export default function GamesPanel() {
                 component="div"
                 fontWeight="medium"
               >
-                {game.white?.name || "White"} vs {game.black?.name || "Black"}
+                {game.white?.name || t("common:white")} vs{" "}
+                {game.black?.name || t("common:black")}
               </Typography>
 
               <Typography
@@ -271,7 +275,7 @@ export default function GamesPanel() {
                 {game.result || "*"} •{" "}
                 {game.date
                   ? formatDate(new Date(game.date.replace(/\./g, "-")))
-                  : "No date"}
+                  : t("common:no_date")}
               </Typography>
 
               {game.event && (
@@ -291,7 +295,7 @@ export default function GamesPanel() {
               size="small"
               onClick={() => handleLoadTempGame(game)}
             >
-              Загрузить
+              {t("common:load")}
             </Button>
           </Box>
         ))}
@@ -300,7 +304,7 @@ export default function GamesPanel() {
           <Box sx={{ textAlign: "center", mt: 2 }}>
             <Link href="/temp-games" passHref>
               <Button variant="text" size="small">
-                View all {tempGamesList.length} games
+                {t("common:view_all_games", { count: tempGamesList.length })}
               </Button>
             </Link>
           </Box>
@@ -322,8 +326,12 @@ export default function GamesPanel() {
           aria-label="game lists tabs"
           variant="fullWidth"
         >
-          <Tab label={`Loaded Games (${gamesList.length})`} />
-          <Tab label={`Temp List (${tempGamesList.length})`} />
+          <Tab
+            label={t("common:loaded_games_tab", { count: gamesList.length })}
+          />
+          <Tab
+            label={t("common:temp_list_tab", { count: tempGamesList.length })}
+          />
         </Tabs>
       </Box>
 
@@ -339,17 +347,16 @@ export default function GamesPanel() {
         aria-describedby="clear-dialog-description"
       >
         <DialogTitle id="clear-dialog-title">
-          Confirm Clear All Temporary Games
+          {t("common:confirm_clear_title")}
         </DialogTitle>
         <DialogContent>
           <DialogContentText id="clear-dialog-description">
-            Are you sure you want to clear all {tempGamesList.length} games from
-            the temporary list? This action cannot be undone.
+            {t("common:confirm_clear_message", { count: tempGamesList.length })}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseClearConfirm} color="primary">
-            Cancel
+            {t("common:cancel")}
           </Button>
           <Button
             onClick={handleConfirmClear}
@@ -357,7 +364,7 @@ export default function GamesPanel() {
             variant="contained"
             startIcon={<Icon icon="mdi:delete-forever" />}
           >
-            Clear All Games
+            {t("common:clear_all_confirm")}
           </Button>
         </DialogActions>
       </Dialog>

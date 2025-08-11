@@ -1,9 +1,9 @@
 import { CLASSIFICATION_COLORS } from "@/constants";
 import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
-import { capitalize } from "@/lib/helpers";
 import { Color, MoveClassification } from "@/types/enums";
 import { Box, Grid2 as Grid, Typography } from "@mui/material";
 import { useAtomValue } from "jotai";
+import { useTranslation } from "next-i18next";
 import { useMemo } from "react";
 import { boardAtom, gameEvalAtom } from "../../../states";
 
@@ -12,6 +12,7 @@ interface Props {
 }
 
 export default function ClassificationRow({ classification }: Props) {
+  const { t } = useTranslation("chess");
   const gameEval = useAtomValue(gameEvalAtom);
   const board = useAtomValue(boardAtom);
   const { getMainLineMoves, goToNode } = useChessActionsWithBranches(boardAtom);
@@ -113,7 +114,7 @@ export default function ClassificationRow({ classification }: Props) {
         />
 
         <Typography align="center" fontSize="0.9rem">
-          {capitalize(classification)}
+          {t(classification)}
         </Typography>
       </Grid>
 

@@ -5,7 +5,7 @@ import { useMemo } from "react";
 export function useThemeColors() {
   const theme = useTheme();
 
-  // Определяем цвета в зависимости от темы (мемоизируем)
+  // Define colors based on theme (memoized)
   const colors = useMemo(
     () => ({
       moveColor: theme.palette.mode === "dark" ? "#90caf9" : "#1976d2",

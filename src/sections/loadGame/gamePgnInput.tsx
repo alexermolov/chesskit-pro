@@ -1,6 +1,7 @@
 import { FormControl, TextField, Button } from "@mui/material";
 import { Icon } from "@iconify/react";
 import React from "react";
+import { useTranslation } from "next-i18next";
 
 interface Props {
   pgn: string;
@@ -8,6 +9,8 @@ interface Props {
 }
 
 export default function GamePgnInput({ pgn, setPgn }: Props) {
+  const { t } = useTranslation("common");
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -24,7 +27,7 @@ export default function GamePgnInput({ pgn, setPgn }: Props) {
   return (
     <FormControl fullWidth>
       <TextField
-        label="Enter PGN here..."
+        label={t("enter_pgn_here")}
         variant="outlined"
         multiline
         value={pgn}
@@ -37,7 +40,7 @@ export default function GamePgnInput({ pgn, setPgn }: Props) {
         component="label"
         startIcon={<Icon icon="material-symbols:upload" />}
       >
-        Upload PGN File
+        {t("upload_pgn_file")}
         <input type="file" hidden accept=".pgn" onChange={handleFileChange} />
       </Button>
     </FormControl>

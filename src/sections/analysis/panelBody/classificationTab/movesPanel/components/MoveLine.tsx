@@ -14,7 +14,7 @@ export const MoveLine = ({ children, lineIndex }: MoveLineProps) => {
       sx={{
         marginBottom: "4px",
         display: "flex",
-        flexWrap: "wrap", // Разрешаем переносить элементы внутри строки
+        flexWrap: "wrap", // Allow wrapping elements within the line
         alignItems: "center",
         backgroundColor: "transparent",
         padding: "2px 4px",

@@ -10,7 +10,7 @@ export class Stockfish17 {
 
     const multiThreadIsSupported = isMultiThreadSupported();
 
-    const enginePath = `engines/stockfish-17/stockfish-17${
+    const enginePath = `/engines/stockfish-17/stockfish-17${
       lite ? "-lite" : ""
     }${multiThreadIsSupported ? "" : "-single"}.js`;
 
