@@ -38,7 +38,7 @@ export default function Analysis() {
   const gameEval = useAtomValue(gameEvalAtom);
   const { getTempGameById, loadTempGame } = useTempGamesManager();
 
-  // Определяем когда показывать вкладку ходов
+  // Determine when to show the moves tab
   const showMovesTab = game && game.history().length > 0;
 
   useEffect(() => {
@@ -46,31 +46,78 @@ export default function Analysis() {
       setBoard(new Chess());
     };
 
-    // Load temp game if tempGameId is provided in URL
-    if (router.query.tempGameId) {
-      const tempGameId = Number(router.query.tempGameId);
-      const tempGame = getTempGameById(tempGameId);
-      if (tempGame) {
-        loadTempGame(tempGame, resetBoard);
+    // Check saved navigation parameters from Electron
+    const checkPendingNavigation = () => {
+      const pendingNavigation = localStorage.getItem("pendingNavigation");
+      if (pendingNavigation) {
+        try {
+          const navParams = JSON.parse(pendingNavigation);
+          localStorage.removeItem("pendingNavigation");
+
+          // If there is tempGameId in the saved parameters
+          if (navParams.tempGameId) {
+            const tempGameId = Number(navParams.tempGameId);
+            // Add a small delay to load state from localStorage
+            setTimeout(() => {
+              const tempGame = getTempGameById(tempGameId);
+              if (tempGame) {
+                console.log(
+                  "Loading temp game from pending navigation:",
+                  tempGameId
+                );
+                loadTempGame(tempGame, resetBoard);
+              } else {
+                console.warn(
+                  "Temp game not found for pending navigation:",
+                  tempGameId
+                );
+              }
+            }, 100);
+            return true; // Indicate that the game was loaded
+          }
+
+          // If there is gameId in the saved parameters, update the URL
+          if (navParams.gameId) {
+            router.replace(
+              {
+                pathname: "/",
+                query: { gameId: navParams.gameId },
+              },
+              undefined,
+              { shallow: true }
+            );
+            return true;
+          }
+        } catch (e) {
+          console.error("Error parsing pending navigation:", e);
+          localStorage.removeItem("pendingNavigation");
+        }
+      }
+      return false;
+    };
+
+    // First, check saved navigation parameters
+    const navigationHandled = checkPendingNavigation();
+
+    // If navigation was not handled, check current URL parameters
+    if (!navigationHandled) {
+      // Load temp game if tempGameId is provided in URL
+      if (router.query.tempGameId) {
+        const tempGameId = Number(router.query.tempGameId);
+        const tempGame = getTempGameById(tempGameId);
+        if (tempGame) {
+          console.log("Loading temp game from URL:", tempGameId);
+          loadTempGame(tempGame, resetBoard);
+        } else {
+          console.warn("Temp game not found for URL:", tempGameId);
+        }
       }
     }
-  }, [router.query, getTempGameById, loadTempGame, setBoard]);
+  }, [router.query, getTempGameById, loadTempGame, setBoard, router]);
 
   return (
     <Grid container gap={4} justifyContent="space-evenly" alignItems="start">
       <PageTitle title={`ChessKit Pro - ${t("analysis")}`} />
-
-      {/* <Grid container justifyContent="center" alignItems="center" size={12}>
-        <Link href="/temp-games" passHref>
-          <Button
-            variant="outlined"
-            startIcon={<Icon icon="mdi:playlist-play" />}
-            sx={{ mb: 2 }}
-          >
-            Temporary Games List ({tempGamesList.length})
-          </Button>
-        </Link>
-      </Grid> */}
 
       <Board />
 

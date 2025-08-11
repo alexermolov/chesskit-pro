@@ -37,6 +37,14 @@ export default function NavBar({ darkMode, switchDarkMode }: Props) {
   const setEvaluationProgress = useSetAtom(evaluationProgressAtom);
 
   const resetGameToInitialPosition = () => {
+    // Check if there are saved navigation parameters
+    const pendingNavigation = localStorage.getItem("pendingNavigation");
+    if (pendingNavigation) {
+      // If there are saved parameters, do not reset state
+      console.log("Skipping reset due to pending navigation");
+      return;
+    }
+
     // Reset game and board to initial chess position
     resetGame({ noHeaders: true });
     resetBoard({ noHeaders: true });

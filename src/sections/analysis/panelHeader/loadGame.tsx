@@ -1,5 +1,6 @@
 import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
 import { useGameDatabase } from "@/hooks/useGameDatabase";
+import { safeLoadPgn } from "@/lib/electronUtils";
 import { decodeBase64 } from "@/lib/helpers";
 import { Game } from "@/types/game";
 import { Chess } from "chess.js";
@@ -14,7 +15,6 @@ import {
   gameAtom,
   gameEvalAtom,
 } from "../states";
-import { safeNavigate } from "@/lib/electronUtils";
 
 export default function LoadGame() {
   const { t } = useTranslation("chess");
@@ -68,10 +68,26 @@ export default function LoadGame() {
       setBoardOrientation(orientationParam !== "black");
     };
 
+    // Check for pending PGN from Electron localStorage
+    const checkPendingPgn = () => {
+      const pendingPgn = localStorage.getItem("pendingPgn");
+      if (pendingPgn) {
+        localStorage.removeItem("pendingPgn");
+        const pendingGame = new Chess();
+        pendingGame.loadPgn(pendingPgn);
+        if (gameHistoryString !== pendingGame.history().join()) {
+          resetAndSetGamePgn(pendingPgn);
+        }
+      }
+    };
+
     if (gameFromUrl) {
       loadGameFromIdParam(gameFromUrl);
     } else if (typeof pgnParam === "string") {
       loadGameFromPgnParam(pgnParam);
+    } else {
+      // Check for pending PGN only if no other sources
+      checkPendingPgn();
     }
   }, [
     gameFromUrl,
@@ -95,10 +111,8 @@ export default function LoadGame() {
       label={isGameLoaded ? t("load_another_game") : t("load_game")}
       size="small"
       setPgn={async (pgn) => {
-        // Используем безопасную навигацию для Electron
-        safeNavigate(router, "/");
-        // Используем PGN напрямую, чтобы сохранить вариации
-        resetAndSetGamePgn(pgn);
+        // Используем безопасную загрузку PGN для Electron
+        safeLoadPgn(router, pgn, resetAndSetGamePgn);
       }}
     />
   );

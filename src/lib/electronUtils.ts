@@ -1,6 +1,6 @@
 // Utilities for working with URLs in Electron applications
 
-// Проверяем, работаем ли мы в Electron
+// Check if we are running in Electron
 export const isElectron = (): boolean => {
   if (typeof window === "undefined") return false;
 
@@ -26,24 +26,76 @@ export const normalizeElectronUrl = (url: string): string => {
   return url;
 };
 
-// Function to handle navigation in Electron-safe manner
-export const safeNavigate = (router: any, path: string, query?: any): void => {
+// Function to handle navigation in an Electron-safe manner
+export const safeNavigate = (
+  router: any,
+  path: string,
+  query?: any,
+  resetCallback?: () => void
+): void => {
   if (isElectron()) {
-    // В Electron используем обновление URL и перезагрузку
+    // In Electron, save the current theme before reload
+    // Use the existing useDarkMode key from the app's theme system
+    const isDarkMode = localStorage.getItem("useDarkMode");
+    if (isDarkMode) {
+      localStorage.setItem("electron-theme-backup", isDarkMode);
+    }
+
+    // If navigating to the main page with game parameters, save them
+    if ((path === "/" || !path) && query) {
+      // Save navigation parameters for restoration after reload
+      localStorage.setItem("pendingNavigation", JSON.stringify(query));
+    }
+
+    // Call callback to reset state before navigation
+    if (resetCallback) {
+      resetCallback();
+    }
+
+    // Then update the URL and reload
     const queryString = query
       ? "?" + new URLSearchParams(query).toString()
       : "";
     window.location.hash = queryString;
     if (path === "/" || !path) {
       window.location.reload();
+    } else {
+      // For other paths, use router navigation
+      if (query) {
+        router.push({ pathname: path, query });
+      } else {
+        router.push(path);
+      }
     }
   } else {
-    // В браузере используем обычную навигацию
+    // In the browser, use regular navigation
     if (query) {
       router.push({ pathname: path, query });
     } else {
       router.push(path);
     }
+  }
+};
+
+// Function to handle PGN loading in an Electron-safe manner
+export const safeLoadPgn = (
+  router: any,
+  pgn: string,
+  resetAndSetGamePgn: (pgn: string) => void
+): void => {
+  if (isElectron()) {
+    // In Electron, save theme and PGN to localStorage and then reload
+    const isDarkMode = localStorage.getItem("useDarkMode");
+    if (isDarkMode) {
+      localStorage.setItem("electron-theme-backup", isDarkMode);
+    }
+    localStorage.setItem("pendingPgn", pgn);
+    window.location.hash = "";
+    window.location.reload();
+  } else {
+    // In the browser, use regular navigation and set PGN
+    router.push("/");
+    resetAndSetGamePgn(pgn);
   }
 };
 
@@ -83,6 +135,7 @@ const electronUtils = {
   loadElectronResource,
   checkResourceAvailability,
   safeNavigate,
+  safeLoadPgn,
 };
 
 export default electronUtils;
