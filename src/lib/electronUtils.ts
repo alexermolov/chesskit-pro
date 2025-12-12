@@ -81,7 +81,8 @@ export const safeNavigate = (
 export const safeLoadPgn = (
   router: any,
   pgn: string,
-  resetAndSetGamePgn: (pgn: string) => void
+  resetAndSetGamePgn: (pgn: string) => void,
+  gamesList?: any[]
 ): void => {
   if (isElectron()) {
     // In Electron, save theme and PGN to localStorage and then reload
@@ -90,6 +91,14 @@ export const safeLoadPgn = (
       localStorage.setItem("electron-theme-backup", isDarkMode);
     }
     localStorage.setItem("pendingPgn", pgn);
+
+    // Save games list if provided
+    if (gamesList && gamesList.length > 0) {
+      localStorage.setItem("pendingGamesList", JSON.stringify(gamesList));
+    } else {
+      localStorage.removeItem("pendingGamesList");
+    }
+
     window.location.hash = "";
     window.location.reload();
   } else {

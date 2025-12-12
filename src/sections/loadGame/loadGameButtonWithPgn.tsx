@@ -4,7 +4,7 @@ import NewGameDialog from "./loadGameDialog";
 import { useTranslation } from "next-i18next";
 
 interface Props {
-  setPgn?: (pgn: string) => Promise<void>;
+  setPgn?: (pgn: string, gamesList?: any[]) => Promise<void>;
   label?: string;
   size?: "small" | "medium" | "large";
 }

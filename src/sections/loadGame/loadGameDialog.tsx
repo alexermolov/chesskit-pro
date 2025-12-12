@@ -37,7 +37,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   setGame?: (game: Chess) => Promise<void>;
-  setPgn?: (pgn: string) => Promise<void>;
+  setPgn?: (pgn: string, gamesList?: GameInfo[]) => Promise<void>;
 }
 
 export default function NewGameDialog({
@@ -60,52 +60,70 @@ export default function NewGameDialog({
   const setGamesList = useSetAtom(gamesListAtom);
   const { addGame } = useGameDatabase();
 
+  const showTimedMessage = (
+    message: string,
+    setter: (msg: string) => void,
+    timeoutRef: React.MutableRefObject<NodeJS.Timeout | null>,
+    duration: number
+  ) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    setter(message);
+    timeoutRef.current = setTimeout(() => setter(""), duration);
+  };
+
+  const loadSingleGame = async (gamePgn: string, gamesList?: GameInfo[]) => {
+    setSentryContext("loadedGame", { pgn: gamePgn });
+
+    if (setPgnCallback) {
+      await setPgnCallback(gamePgn, gamesList);
+    } else if (setGame) {
+      await setGame(getGameFromPgn(gamePgn));
+    } else {
+      await addGame(getGameFromPgn(gamePgn));
+    }
+  };
+
   const handleAddGame = async (pgn: string, boardOrientation?: boolean) => {
     if (!pgn) return;
 
     try {
-      // Check if PGN contains multiple games
       const games = MultiGamePgnParser.parseMultiGamePgn(pgn);
+      const isMultiGame = games.length > 1;
 
-      if (games.length > 1) {
-        // If multiple games are found, save them to a list and load the first one
+      // Always create and set the games list for "Load a game" mode
+      if (setPgnCallback || setGame) {
         const gameInfos = games
           .map((game, index) => createGameInfoFromPgn(game.pgn, index))
-          .filter((game): game is GameInfo => game !== null); // Filter null values with typing
+          .filter((game): game is GameInfo => game !== null);
 
         setGamesList(gameInfos);
 
-        // Show a message that multiple games are loaded
-        if (messageTimeout.current) {
-          clearTimeout(messageTimeout.current);
+        if (isMultiGame) {
+          showTimedMessage(
+            t("multi_games_loaded", { count: games.length }),
+            setMultiGameMessage,
+            messageTimeout,
+            5000
+          );
         }
 
-        setMultiGameMessage(t("multi_games_loaded", { count: games.length }));
-
-        messageTimeout.current = setTimeout(() => {
-          setMultiGameMessage("");
-        }, 5000);
-
-        // Load the first game as active
-        if (setPgnCallback) {
-          setSentryContext("loadedGame", { pgn: games[0].pgn });
-          await setPgnCallback(games[0].pgn);
-        } else if (setGame) {
-          const gameToAdd = getGameFromPgn(games[0].pgn);
-          setSentryContext("loadedGame", { pgn: games[0].pgn });
-          await setGame(gameToAdd);
-        }
+        // Load the first game as active, passing the games list for Electron
+        await loadSingleGame(games[0].pgn, gameInfos);
       } else {
-        // If only one game, process as usual
-        if (setPgnCallback) {
-          setSentryContext("loadedGame", { pgn });
-          await setPgnCallback(pgn);
-        } else if (setGame) {
-          const gameToAdd = getGameFromPgn(pgn);
-          setSentryContext("loadedGame", { pgn });
-          await setGame(gameToAdd);
-        } else {
-          await addGame(getGameFromPgn(pgn));
+        // Database mode: add all games to the database
+        if (isMultiGame) {
+          showTimedMessage(
+            t("multi_games_loaded", { count: games.length }),
+            setMultiGameMessage,
+            messageTimeout,
+            5000
+          );
+        }
+
+        for (const game of games) {
+          await addGame(getGameFromPgn(game.pgn));
         }
       }
 
@@ -114,32 +132,33 @@ export default function NewGameDialog({
     } catch (error) {
       console.error(error);
 
-      if (parsingErrorTimeout.current) {
-        clearTimeout(parsingErrorTimeout.current);
-      }
-
-      setParsingError(
+      const errorMessage =
         error instanceof Error
           ? `${error.message} !`
-          : t("invalid_pgn_unknown_error")
-      );
+          : t("invalid_pgn_unknown_error");
 
-      parsingErrorTimeout.current = setTimeout(() => {
-        setParsingError("");
-      }, 3000);
+      showTimedMessage(
+        errorMessage,
+        setParsingError,
+        parsingErrorTimeout,
+        3000
+      );
     }
+  };
+
+  const clearTimeouts = () => {
+    [parsingErrorTimeout, messageTimeout].forEach((ref) => {
+      if (ref.current) {
+        clearTimeout(ref.current);
+      }
+    });
   };
 
   const handleClose = () => {
     setPgn("");
     setParsingError("");
     setMultiGameMessage("");
-    if (parsingErrorTimeout.current) {
-      clearTimeout(parsingErrorTimeout.current);
-    }
-    if (messageTimeout.current) {
-      clearTimeout(messageTimeout.current);
-    }
+    clearTimeouts();
     onClose();
   };
 

@@ -15,6 +15,7 @@ import {
   gameAtom,
   gameEvalAtom,
 } from "../states";
+import { gamesListAtom, GameInfo } from "../states/gamesListState";
 
 export default function LoadGame() {
   const { t } = useTranslation("chess");
@@ -26,6 +27,7 @@ export default function LoadGame() {
   const setEval = useSetAtom(gameEvalAtom);
   const setBoardOrientation = useSetAtom(boardOrientationAtom);
   const evaluationProgress = useAtomValue(evaluationProgressAtom);
+  const setGamesList = useSetAtom(gamesListAtom);
 
   const resetAndSetGamePgn = useCallback(
     (pgn: string) => {
@@ -78,6 +80,20 @@ export default function LoadGame() {
         if (gameHistoryString !== pendingGame.history().join()) {
           resetAndSetGamePgn(pendingPgn);
         }
+
+        // Restore games list if available
+        const pendingGamesListStr = localStorage.getItem("pendingGamesList");
+        if (pendingGamesListStr) {
+          try {
+            const pendingGamesList = JSON.parse(
+              pendingGamesListStr
+            ) as GameInfo[];
+            setGamesList(pendingGamesList);
+            localStorage.removeItem("pendingGamesList");
+          } catch (error) {
+            console.error("Error restoring games list:", error);
+          }
+        }
       }
     };
 
@@ -97,6 +113,7 @@ export default function LoadGame() {
     resetAndSetGamePgn,
     setEval,
     setBoardOrientation,
+    setGamesList,
   ]);
 
   const isGameLoaded =
@@ -110,9 +127,9 @@ export default function LoadGame() {
     <LoadGameButtonWithPgn
       label={isGameLoaded ? t("load_another_game") : t("load_game")}
       size="small"
-      setPgn={async (pgn) => {
+      setPgn={async (pgn, gamesList) => {
         // Используем безопасную загрузку PGN для Electron
-        safeLoadPgn(router, pgn, resetAndSetGamePgn);
+        safeLoadPgn(router, pgn, resetAndSetGamePgn, gamesList);
       }}
     />
   );
