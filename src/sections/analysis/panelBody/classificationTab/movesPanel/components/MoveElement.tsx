@@ -1,16 +1,19 @@
 import { Icon } from "@iconify/react";
-import { Box, Chip, IconButton, Tooltip } from "@mui/material";
-import { useCallback } from "react";
+import { Box, Chip, IconButton, Menu, MenuItem, Tooltip } from "@mui/material";
+import { useCallback, useState } from "react";
 import { hasRealComment } from "@/lib/helpers";
+import { useTranslation } from "next-i18next";
 
 interface MoveElementProps {
   id: string;
   text: string;
   nodeId: string;
   isCurrentMove: boolean;
+  isInVariation: boolean;
   comment?: string | null;
   onMoveClick: (nodeId: string) => void;
   onStartEditComment: (nodeId: string, comment: string) => void;
+  onPromoteToMainLine?: (nodeId: string) => void;
   indentStyle: object;
   colors: any;
   theme: any;
@@ -21,13 +24,50 @@ export const MoveElement = ({
   text,
   nodeId,
   isCurrentMove,
+  isInVariation,
   comment,
   onMoveClick,
   onStartEditComment,
+  onPromoteToMainLine,
   indentStyle,
   colors,
   theme,
 }: MoveElementProps) => {
+  const { t } = useTranslation("chess");
+  const [contextMenu, setContextMenu] = useState<{
+    mouseX: number;
+    mouseY: number;
+  } | null>(null);
+
+  const handleContextMenu = useCallback(
+    (event: React.MouseEvent) => {
+      // Only show context menu if node is in a variation and promote function is available
+      if (isInVariation && onPromoteToMainLine) {
+        event.preventDefault();
+        setContextMenu(
+          contextMenu === null
+            ? {
+                mouseX: event.clientX + 2,
+                mouseY: event.clientY - 6,
+              }
+            : null
+        );
+      }
+    },
+    [isInVariation, onPromoteToMainLine, contextMenu]
+  );
+
+  const handleCloseContextMenu = useCallback(() => {
+    setContextMenu(null);
+  }, []);
+
+  const handlePromoteToMainLine = useCallback(() => {
+    if (onPromoteToMainLine && nodeId) {
+      onPromoteToMainLine(nodeId);
+    }
+    handleCloseContextMenu();
+  }, [onPromoteToMainLine, nodeId, handleCloseContextMenu]);
+
   const handleDoubleClick = useCallback(() => {
     if (nodeId) {
       const currentComment = comment || "";
@@ -60,7 +100,7 @@ export const MoveElement = ({
       }}
     >
       <Tooltip
-        title={`Click - go to move, Double click - ${hasActualComment ? "edit comment" : "add comment"}`}
+        title={`Click - go to move, Double click - ${hasActualComment ? "edit comment" : "add comment"}${isInVariation && onPromoteToMainLine ? ", Right click - promote to main line" : ""}`}
         arrow
         enterDelay={700}
       >
@@ -68,6 +108,7 @@ export const MoveElement = ({
           label={text}
           onClick={() => nodeId && onMoveClick(nodeId)}
           onDoubleClick={handleDoubleClick}
+          onContextMenu={handleContextMenu}
           size="small"
           sx={{
             height: "auto",
@@ -102,6 +143,26 @@ export const MoveElement = ({
           }}
         />
       </Tooltip>
+
+      {/* Context menu for promoting to main line */}
+      <Menu
+        open={contextMenu !== null}
+        onClose={handleCloseContextMenu}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          contextMenu !== null
+            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+            : undefined
+        }
+      >
+        <MenuItem onClick={handlePromoteToMainLine}>
+          <Icon
+            icon="mdi:arrow-up-bold"
+            style={{ marginRight: "8px", fontSize: "18px" }}
+          />
+          {t("promote_to_main_line")}
+        </MenuItem>
+      </Menu>
 
       {/* Add comment button if there is no real comment */}
       {nodeId && !hasActualComment && (

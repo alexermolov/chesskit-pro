@@ -16,6 +16,7 @@ export function PgnDisplay({
   moveTree,
   onMoveClick,
   onCommentUpdate,
+  onPromoteToMainLine,
   currentNodeId,
 }: PgnDisplayProps) {
   const { colors, theme } = useThemeColors();
@@ -77,6 +78,15 @@ export function PgnDisplay({
   const formatCommentWithArrows = useCallback((commentText: string) => {
     return CommentUtils.formatCommentWithArrows(commentText);
   }, []);
+
+  // Function to check if a node is in a variation (not in main line)
+  const isNodeInVariation = useCallback(
+    (nodeId: string) => {
+      if (!nodeId || !moveTree.mainLineIds) return false;
+      return !moveTree.mainLineIds.includes(nodeId);
+    },
+    [moveTree]
+  );
 
   // Generation of display elements based on the move tree
   const displayElements = useMemo(() => {
@@ -149,9 +159,11 @@ export function PgnDisplay({
                   text={element.text}
                   nodeId={element.nodeId}
                   isCurrentMove={isCurrentMove}
+                  isInVariation={isNodeInVariation(element.nodeId)}
                   comment={moveTree.nodes[element.nodeId]?.comment}
                   onMoveClick={onMoveClick}
                   onStartEditComment={handleStartEditComment}
+                  onPromoteToMainLine={onPromoteToMainLine}
                   indentStyle={{}}
                   colors={colors}
                   theme={theme}
@@ -173,6 +185,7 @@ export function PgnDisplay({
                 text={element.text}
                 nodeId={element.nodeId!}
                 isCurrentMove={isCurrentMove}
+                isInVariation={isNodeInVariation(element.nodeId!)}
                 comment={
                   element.nodeId
                     ? moveTree.nodes[element.nodeId]?.comment
@@ -180,6 +193,7 @@ export function PgnDisplay({
                 }
                 onMoveClick={onMoveClick}
                 onStartEditComment={handleStartEditComment}
+                onPromoteToMainLine={onPromoteToMainLine}
                 indentStyle={indentStyle}
                 colors={colors}
                 theme={theme}

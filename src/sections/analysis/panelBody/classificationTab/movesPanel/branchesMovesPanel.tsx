@@ -5,7 +5,7 @@ import { boardAtom } from "../../../states";
 import { PgnDisplay } from "./components/PgnDisplay";
 
 export default function BranchesMovesPanel() {
-  const { goToNode, moveTree, updateNodeComment } =
+  const { goToNode, moveTree, updateNodeComment, promoteToMainLine } =
     useChessActionsWithBranches(boardAtom);
 
   // Функция для перехода к конкретному ходу по nodeId
@@ -19,6 +19,14 @@ export default function BranchesMovesPanel() {
       updateNodeComment(nodeId, comment);
     },
     [updateNodeComment]
+  );
+
+  // Функция для продвижения ветки в главную линию
+  const handlePromoteToMainLine = useCallback(
+    (nodeId: string) => {
+      promoteToMainLine(nodeId);
+    },
+    [promoteToMainLine]
   );
 
   return (
@@ -67,6 +75,7 @@ export default function BranchesMovesPanel() {
           moveTree={moveTree}
           onMoveClick={handleMoveClick}
           onCommentUpdate={handleCommentUpdate}
+          onPromoteToMainLine={handlePromoteToMainLine}
           currentNodeId={moveTree?.currentNodeId || ""}
         />
       </Box>

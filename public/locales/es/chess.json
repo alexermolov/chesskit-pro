@@ -77,6 +77,7 @@
   "branch": "Rama",
   "branches": "Ramas",
   "main_line": "Línea principal",
+  "promote_to_main_line": "Promover a línea principal",
   "good_move": "Buena jugada",
   "excellent_move": "Excelente jugada",
   "brilliant_move": "Jugada brillante",

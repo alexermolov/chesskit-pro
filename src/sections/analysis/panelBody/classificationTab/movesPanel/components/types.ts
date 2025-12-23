@@ -23,5 +23,6 @@ export interface PgnDisplayProps {
   moveTree: any; // MoveTree
   onMoveClick: (nodeId: string) => void;
   onCommentUpdate: (nodeId: string, comment: string | null) => void;
+  onPromoteToMainLine?: (nodeId: string) => void;
   currentNodeId: string;
 }
