@@ -1,12 +1,15 @@
 import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
 import { Box, alpha } from "@mui/material";
 import { useCallback } from "react";
-import { boardAtom } from "../../../states";
+import { boardAtom, showMovesAtom } from "../../../states";
 import { PgnDisplay } from "./components/PgnDisplay";
+import { useAtomValue } from "jotai";
+import ParticleHideEffect from "@/components/ParticleHideEffect";
 
 export default function BranchesMovesPanel() {
   const { goToNode, moveTree, updateNodeComment, promoteToMainLine } =
     useChessActionsWithBranches(boardAtom);
+  const showMoves = useAtomValue(showMovesAtom);
 
   // Функция для перехода к конкретному ходу по nodeId
   const handleMoveClick = (nodeId: string) => {
@@ -63,22 +66,24 @@ export default function BranchesMovesPanel() {
       }}
       id="moves-panel"
     >
-      <Box
-        sx={{
-          fontSize: "0.95rem",
-          fontFamily: "'Roboto Mono', monospace",
-          width: "100%",
-          boxSizing: "border-box",
-        }}
-      >
-        <PgnDisplay
-          moveTree={moveTree}
-          onMoveClick={handleMoveClick}
-          onCommentUpdate={handleCommentUpdate}
-          onPromoteToMainLine={handlePromoteToMainLine}
-          currentNodeId={moveTree?.currentNodeId || ""}
-        />
-      </Box>
+      <ParticleHideEffect isHidden={!showMoves}>
+        <Box
+          sx={{
+            fontSize: "0.95rem",
+            fontFamily: "'Roboto Mono', monospace",
+            width: "100%",
+            boxSizing: "border-box",
+          }}
+        >
+          <PgnDisplay
+            moveTree={moveTree}
+            onMoveClick={handleMoveClick}
+            onCommentUpdate={handleCommentUpdate}
+            onPromoteToMainLine={handlePromoteToMainLine}
+            currentNodeId={moveTree?.currentNodeId || ""}
+          />
+        </Box>
+      </ParticleHideEffect>
     </Box>
   );
 }

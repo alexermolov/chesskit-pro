@@ -34,6 +34,7 @@ export const boardOrientationAtom = atom(true);
 export const showBestMoveArrowAtom = atom(true);
 export const showPlayerMoveIconAtom = atom(true);
 export const showEngineLinesAtom = atom(true);
+export const showMovesAtom = atom(true);
 
 export const engineNameAtom = atom<EngineName>(DEFAULT_ENGINE);
 export const engineDepthAtom = atom(14);

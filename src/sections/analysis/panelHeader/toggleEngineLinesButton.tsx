@@ -3,13 +3,16 @@ import { Button, Typography } from "@mui/material";
 import { useAtom } from "jotai";
 import { useTranslation } from "next-i18next";
 import { showEngineLinesAtom } from "../states";
+import { showMovesAtom } from "../panelBody/classificationTab/movesPanel/../../../states";
 
 export default function ToggleEngineLinesButton() {
   const { t } = useTranslation("chess");
   const [showEngineLines, setShowEngineLines] = useAtom(showEngineLinesAtom);
+  const [showMoves, setShowMoves] = useAtom(showMovesAtom);
 
   const handleToggle = () => {
     setShowEngineLines(!showEngineLines);
+    setShowMoves(!showMoves);
   };
 
   return (

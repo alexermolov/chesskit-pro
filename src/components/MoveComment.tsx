@@ -114,7 +114,6 @@ export default function MoveComment({ gameAtom }: MoveCommentProps) {
           zIndex: 10,
           background:
             "linear-gradient(135deg, rgba(32, 32, 32, 0.95) 0%, rgba(16, 16, 16, 0.98) 100%)",
-          backdropFilter: "blur(12px)",
           color: "#4caf50",
           padding: 2,
           borderRadius: "0 0 16px 16px",

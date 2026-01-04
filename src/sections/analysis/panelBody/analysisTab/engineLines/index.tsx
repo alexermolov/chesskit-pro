@@ -1,4 +1,4 @@
-import { Grid2 as Grid, Grid2Props as GridProps, List } from "@mui/material";
+import { Grid2 as Grid, Grid2Props as GridProps, List, Box } from "@mui/material";
 import LineEvaluation from "./lineEvaluation";
 import {
   boardAtom,
@@ -8,6 +8,7 @@ import {
 } from "../../../states";
 import { useAtomValue } from "jotai";
 import { LineEval } from "@/types/eval";
+import ParticleHideEffect from "@/components/ParticleHideEffect";
 
 export default function EngineLines(props: GridProps) {
   const board = useAtomValue(boardAtom);
@@ -27,13 +28,15 @@ export default function EngineLines(props: GridProps) {
 
   return (
     <Grid container justifyContent="center" alignItems="center" {...props}>
-      {showEngineLines && (
-        <List sx={{ width: "95%", padding: 0 }}>
-          {engineLines.map((line) => (
-            <LineEvaluation key={line.multiPv} line={line} />
-          ))}
-        </List>
-      )}
+      <Box sx={{ width: "95%" }}>
+        <ParticleHideEffect isHidden={!showEngineLines}>
+          <List sx={{ width: "100%", padding: 0 }}>
+            {engineLines.map((line) => (
+              <LineEvaluation key={line.multiPv} line={line} />
+            ))}
+          </List>
+        </ParticleHideEffect>
+      </Box>
     </Grid>
   );
 }
