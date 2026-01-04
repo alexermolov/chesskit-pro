@@ -36,6 +36,12 @@ export const showPlayerMoveIconAtom = atom(true);
 export const showEngineLinesAtom = atom(true);
 export const showMovesAtom = atom(true);
 
+// Atom for moves display mode: 'tree' or 'variations'
+export const movesDisplayModeAtom = atomWithStorage<"tree" | "variations">(
+  "movesDisplayMode",
+  "tree"
+);
+
 export const engineNameAtom = atom<EngineName>(DEFAULT_ENGINE);
 export const engineDepthAtom = atom(14);
 export const engineMultiPvAtom = atom(3);

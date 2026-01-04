@@ -203,5 +203,7 @@
   "mistake_move": "ошибка",
   "blunder_move": "грубая ошибка",
   "was_the_best_move": "был лучшим ходом",
-  "is": "это"
+  "is": "это",
+  "tree_view": "Вид дерева",
+  "variations_table": "Таблица вариаций"
 }

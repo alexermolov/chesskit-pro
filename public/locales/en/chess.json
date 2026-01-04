@@ -202,5 +202,7 @@
   "mistake_move": "a mistake",
   "blunder_move": "a blunder",
   "was_the_best_move": "was the best move",
-  "is": "is"
+  "is": "is",
+  "tree_view": "Tree View",
+  "variations_table": "Variations Table"
 }
