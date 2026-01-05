@@ -33,6 +33,43 @@ export function VariationsTableDisplay({
   // Check if a node is the current node
   const isCurrentNode = (nodeId: string) => nodeId === currentNodeId;
 
+  // Determine rows where each column first diverges from the previous column
+  const firstDivergenceRows = useMemo(() => {
+    const divergenceMap = new Map<number, Set<number>>(); // moveIndex -> Set of variation indices
+
+    variations.forEach((variation, varIndex) => {
+      // Skip first column (no previous column to compare with)
+      if (varIndex === 0) return;
+
+      // Compare this variation with the previous one (varIndex - 1)
+      const prevVariation = variations[varIndex - 1];
+
+      // Find first move that differs from previous variation
+      for (let moveIndex = 0; moveIndex < variation.moves.length; moveIndex++) {
+        const prevMove = prevVariation.moves[moveIndex];
+        const currentMove = variation.moves[moveIndex];
+
+        // Check if moves differ (also handle case when previous variation ended)
+        if (prevMove !== currentMove) {
+          // This is the first divergence for this variation from previous one
+          if (!divergenceMap.has(moveIndex)) {
+            divergenceMap.set(moveIndex, new Set());
+          }
+          divergenceMap.get(moveIndex)!.add(varIndex);
+          break; // Only mark the first divergence
+        }
+      }
+    });
+
+    return divergenceMap;
+  }, [variations]);
+
+  // Check if a cell should be highlighted as divergent from previous column
+  const isDivergentCell = (moveIndex: number, varIndex: number): boolean => {
+    const divergentVars = firstDivergenceRows.get(moveIndex);
+    return divergentVars ? divergentVars.has(varIndex) : false;
+  };
+
   if (variations.length === 0) {
     return (
       <Box sx={{ p: 2, textAlign: "center", color: "text.secondary" }}>
@@ -115,6 +152,9 @@ export function VariationsTableDisplay({
             ? `${moveNumber}.`
             : `${moveNumber}...`;
 
+          // Check if this row has any first divergence from previous columns
+          const hasDivergence = firstDivergenceRows.has(moveIndex);
+
           return (
             <>
               {/* Move number cell */}
@@ -124,7 +164,10 @@ export function VariationsTableDisplay({
                   position: "sticky",
                   left: 0,
                   zIndex: 2,
-                  backgroundColor: (theme) => theme.palette.background.paper,
+                  backgroundColor: (theme) =>
+                    hasDivergence
+                      ? alpha(theme.palette.warning.main, 0.15)
+                      : theme.palette.background.paper,
                   padding: 0.75,
                   paddingLeft: 1,
                   borderBottom: 1,
@@ -140,16 +183,20 @@ export function VariationsTableDisplay({
                   variant="body2"
                   fontFamily="inherit"
                   color="text.secondary"
+                  fontWeight={hasDivergence ? "bold" : "normal"}
                 >
                   {displayNumber}
                 </Typography>
               </Box>
 
               {/* Move cells for each variation */}
-              {variations.map((variation) => {
+              {variations.map((variation, varIndex) => {
                 const move = variation.moves[moveIndex];
                 const nodeId = variation.nodeIds[moveIndex];
                 const isCurrent = nodeId && isCurrentNode(nodeId);
+
+                // Check if this specific cell is a first divergence point from previous column
+                const isDivergentMove = isDivergentCell(moveIndex, varIndex);
 
                 return (
                   <Box
@@ -164,10 +211,16 @@ export function VariationsTableDisplay({
                       cursor: move ? "pointer" : "default",
                       backgroundColor: isCurrent
                         ? alpha(colors.moveColor, 0.3)
-                        : "transparent",
+                        : isDivergentMove
+                          ? alpha(colors.hoverColor, 0.15)
+                          : "transparent",
                       fontFamily: "'Roboto Mono', monospace",
                       fontSize: "0.9rem",
                       transition: "all 0.15s ease-in-out",
+                      border:
+                        isDivergentMove && !isCurrent
+                          ? `1px solid ${alpha(colors.hoverColor, 0.4)}`
+                          : "none",
                       "&:hover": move
                         ? {
                             backgroundColor: alpha(colors.hoverColor, 0.2),
@@ -185,7 +238,9 @@ export function VariationsTableDisplay({
                       <Typography
                         variant="body2"
                         fontFamily="inherit"
-                        fontWeight={isCurrent ? "bold" : "normal"}
+                        fontWeight={
+                          isCurrent || isDivergentMove ? "bold" : "normal"
+                        }
                         color={isCurrent ? colors.moveColor : "text.primary"}
                       >
                         {move}
