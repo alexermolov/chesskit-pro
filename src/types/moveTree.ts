@@ -223,7 +223,7 @@ export class MoveTreeUtils {
   // Promote branch to main line
   static promoteToMainLine(tree: MoveTree, nodeId: string): MoveTree {
     const path = this.getPathToNode(tree, nodeId);
-    
+
     // Create a new tree with updated main line
     const newTree: MoveTree = {
       ...tree,
@@ -238,17 +238,17 @@ export class MoveTreeUtils {
 
       const parentId = path[index - 1] || tree.rootId;
       const parentNode = newTree.nodes[parentId];
-      
+
       if (parentNode && parentNode.children.length > 1) {
         // Find the position of current node in children
         const currentIndex = parentNode.children.indexOf(currentNodeId);
-        
+
         if (currentIndex > 0) {
           // Move this child to the first position
           const newChildren = [...parentNode.children];
           newChildren.splice(currentIndex, 1); // Remove from current position
           newChildren.unshift(currentNodeId); // Add to beginning
-          
+
           // Update parent node with reordered children
           newTree.nodes[parentId] = {
             ...parentNode,

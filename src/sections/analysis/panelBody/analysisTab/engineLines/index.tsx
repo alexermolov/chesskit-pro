@@ -1,14 +1,19 @@
-import { Grid2 as Grid, Grid2Props as GridProps, List, Box } from "@mui/material";
-import LineEvaluation from "./lineEvaluation";
+import ParticleHideEffect from "@/components/ParticleHideEffect";
+import { LineEval } from "@/types/eval";
+import {
+  Box,
+  Grid2 as Grid,
+  Grid2Props as GridProps,
+  List,
+} from "@mui/material";
+import { useAtomValue } from "jotai";
 import {
   boardAtom,
   currentPositionAtom,
   engineMultiPvAtom,
   showEngineLinesAtom,
 } from "../../../states";
-import { useAtomValue } from "jotai";
-import { LineEval } from "@/types/eval";
-import ParticleHideEffect from "@/components/ParticleHideEffect";
+import LineEvaluation from "./lineEvaluation";
 
 export default function EngineLines(props: GridProps) {
   const board = useAtomValue(boardAtom);
