@@ -120,7 +120,9 @@ export const useChessActionsWithBranches = (
       const targetNodeId = nodeId || moveTree.currentNodeId;
       const moves = MoveTreeUtils.getMovesToNode(moveTree, targetNodeId);
 
-      const newGame = new Chess();
+      const startingFen =
+        moveTree.nodes[moveTree.rootId]?.fen || DEFAULT_POSITION;
+      const newGame = new Chess(startingFen);
       const headers = game.getHeaders();
       Object.entries(headers).forEach(([key, value]) => {
         if (value) newGame.setHeader(key, value);
@@ -173,6 +175,7 @@ export const useChessActionsWithBranches = (
   const setFen = useCallback(
     (fen: string) => {
       setIsManualTreeOperation(true);
+      lastManualOperationRef.current = Date.now();
 
       const newGame = new Chess(fen);
       setGame(newGame);
@@ -187,6 +190,7 @@ export const useChessActionsWithBranches = (
   const reset = useCallback(
     (params?: resetGameParams) => {
       setIsManualTreeOperation(true);
+      lastManualOperationRef.current = Date.now();
 
       const newGame = new Chess(params?.fen);
       if (!params?.noHeaders) setGameHeaders(newGame, params);
