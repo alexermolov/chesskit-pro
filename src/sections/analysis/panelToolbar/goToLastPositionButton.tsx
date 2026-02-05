@@ -1,10 +1,10 @@
+import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
 import { Icon } from "@iconify/react";
 import { Grid2 as Grid, IconButton, Tooltip } from "@mui/material";
 import { useAtomValue } from "jotai";
 import { useTranslation } from "next-i18next";
-import { boardAtom, moveTreeAtom } from "../states";
-import { useChessActionsWithBranches } from "@/hooks/useChessActionsWithBranches";
 import { useCallback, useEffect } from "react";
+import { boardAtom, moveTreeAtom } from "../states";
 
 interface GoToLastPositionButtonProps {
   isModalOpen?: boolean;
