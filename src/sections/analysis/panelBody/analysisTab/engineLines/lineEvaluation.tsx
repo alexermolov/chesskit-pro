@@ -1,9 +1,9 @@
+import PrettyMoveSan from "@/components/prettyMoveSan";
+import { getLineEvalLabel, moveLineUciToSan } from "@/lib/chess";
 import { LineEval } from "@/types/eval";
 import { ListItem, Skeleton, Typography } from "@mui/material";
 import { useAtomValue } from "jotai";
 import { boardAtom } from "../../../states";
-import { getLineEvalLabel, moveLineUciToSan } from "@/lib/chess";
-import PrettyMoveSan from "@/components/prettyMoveSan";
 
 interface Props {
   line: LineEval;
