@@ -1,3 +1,7 @@
+import { openings } from "@/data/openings";
+import { getEvaluateGameParams } from "@/lib/chess";
+import { getMovesClassification } from "@/lib/engine/helpers/moveClassification";
+import { UciEngine } from "@/lib/engine/uciEngine";
 import {
   boardAtom,
   currentPositionAtom,
@@ -10,10 +14,6 @@ import {
 import { CurrentPosition, PositionEval } from "@/types/eval";
 import { useAtom, useAtomValue } from "jotai";
 import { useEffect } from "react";
-import { getEvaluateGameParams } from "@/lib/chess";
-import { getMovesClassification } from "@/lib/engine/helpers/moveClassification";
-import { openings } from "@/data/openings";
-import { UciEngine } from "@/lib/engine/uciEngine";
 
 export const useCurrentPosition = (engine: UciEngine | null) => {
   const [currentPosition, setCurrentPosition] = useAtom(currentPositionAtom);
