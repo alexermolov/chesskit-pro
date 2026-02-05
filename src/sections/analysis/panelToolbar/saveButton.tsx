@@ -1,12 +1,12 @@
 import { useGameDatabase } from "@/hooks/useGameDatabase";
+import { getGameToSave } from "@/lib/chess";
+import { MoveTreeUtils } from "@/types/moveTree";
 import { Icon } from "@iconify/react";
 import { Grid2 as Grid, IconButton, Tooltip } from "@mui/material";
 import { useAtomValue } from "jotai";
 import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { boardAtom, gameAtom, gameEvalAtom, moveTreeAtom } from "../states";
-import { getGameToSave } from "@/lib/chess";
-import { MoveTreeUtils } from "@/types/moveTree";
 
 export default function SaveButton() {
   const { t } = useTranslation("chess");
