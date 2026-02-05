@@ -6,15 +6,15 @@ import { hasRealComment } from "@/lib/helpers";
 import { Color } from "@/types/enums";
 import { Box } from "@mui/material";
 import { useAtomValue } from "jotai";
-import { useMemo, useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   boardAtom,
   boardOrientationAtom,
   currentPositionAtom,
   gameAtom,
+  moveTreeAtom,
   showBestMoveArrowAtom,
   showPlayerMoveIconAtom,
-  moveTreeAtom,
 } from "../states";
 
 export default function BoardContainer() {
