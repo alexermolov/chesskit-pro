@@ -7,8 +7,13 @@ import { useAtomValue } from "jotai";
 import ParticleHideEffect from "@/components/ParticleHideEffect";
 
 export default function BranchesMovesPanel() {
-  const { goToNode, moveTree, updateNodeComment, promoteToMainLine } =
-    useChessActionsWithBranches(boardAtom);
+  const {
+    goToNode,
+    moveTree,
+    updateNodeComment,
+    promoteToMainLine,
+    deleteLine,
+  } = useChessActionsWithBranches(boardAtom);
   const showMoves = useAtomValue(showMovesAtom);
 
   // Функция для перехода к конкретному ходу по nodeId
@@ -30,6 +35,13 @@ export default function BranchesMovesPanel() {
       promoteToMainLine(nodeId);
     },
     [promoteToMainLine]
+  );
+
+  const handleDeleteThisLine = useCallback(
+    (nodeId: string) => {
+      deleteLine(nodeId);
+    },
+    [deleteLine]
   );
 
   return (
@@ -80,6 +92,7 @@ export default function BranchesMovesPanel() {
             onMoveClick={handleMoveClick}
             onCommentUpdate={handleCommentUpdate}
             onPromoteToMainLine={handlePromoteToMainLine}
+            onDeleteThisLine={handleDeleteThisLine}
             currentNodeId={moveTree?.currentNodeId || ""}
           />
         </Box>

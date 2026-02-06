@@ -78,6 +78,7 @@
   "branches": "Zweige",
   "main_line": "Hauptlinie",
   "promote_to_main_line": "Zur Hauptlinie machen",
+  "delete_this_line": "Diese Variante löschen",
   "good_move": "Guter Zug",
   "excellent_move": "Hervorragender Zug",
   "brilliant_move": "Brillanter Zug",

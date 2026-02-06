@@ -261,6 +261,60 @@ export class MoveTreeUtils {
     return newTree;
   }
 
+  // Find the starting node of the variation line that contains the given node.
+  // This corresponds to the child node where the "(" variation starts in PGN.
+  // Returns null if the node is not inside a variation or if it cannot be determined.
+  static getVariationStartNodeId(
+    tree: MoveTree,
+    nodeId: string
+  ): string | null {
+    if (!nodeId || nodeId === tree.rootId) return null;
+    if (!tree.nodes[nodeId]) return null;
+    if (tree.mainLineIds.includes(nodeId)) return null;
+
+    const getMainChildForParent = (parentId: string): string | null => {
+      const parentNode = tree.nodes[parentId];
+      if (!parentNode || parentNode.children.length === 0) return null;
+
+      // Same logic as in toPgn(): if parent is on main line and we know the next mainline id,
+      // then that child is the main continuation; otherwise the first child is considered main.
+      const currentMainIndex = tree.mainLineIds.indexOf(parentId);
+      if (
+        currentMainIndex !== -1 &&
+        currentMainIndex + 1 < tree.mainLineIds.length
+      ) {
+        const nextMainLineId = tree.mainLineIds[currentMainIndex + 1];
+        if (parentNode.children.includes(nextMainLineId)) {
+          return nextMainLineId;
+        }
+      }
+
+      return parentNode.children[0];
+    };
+
+    // Walk up while the node is the main continuation of its parent.
+    // The first time it's NOT the main continuation, that's where the variation line starts.
+    let currentId: string | null = nodeId;
+    while (currentId && currentId !== tree.rootId) {
+      const currentNode = tree.nodes[currentId];
+      const parentId = currentNode?.parent;
+      if (!parentId) return currentId;
+
+      const mainChild = getMainChildForParent(parentId);
+      if (!mainChild) return currentId;
+
+      if (currentId !== mainChild) {
+        return currentId;
+      }
+
+      // currentId IS main continuation of its parent, so we are still "inside" the same line.
+      // Move up and keep searching for where the variation begins.
+      currentId = parentId;
+    }
+
+    return nodeId;
+  }
+
   // Convert move tree to PGN string with branches
   static toPgn(tree: MoveTree): string {
     const result: string[] = [];

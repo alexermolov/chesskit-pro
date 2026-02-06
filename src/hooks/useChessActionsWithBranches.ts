@@ -367,6 +367,9 @@ export const useChessActionsWithBranches = (
     (nodeId: string) => {
       if (nodeId === moveTree.rootId) return;
 
+      setIsManualTreeOperation(true);
+      lastManualOperationRef.current = Date.now();
+
       const newTree = MoveTreeUtils.deleteBranch(moveTree, nodeId);
       setMoveTree(newTree);
 
@@ -379,9 +382,26 @@ export const useChessActionsWithBranches = (
     [moveTree, reconstructGameFromTree, setMoveTree, setGame]
   );
 
+  // Delete the whole variation line that contains the given node
+  const deleteLine = useCallback(
+    (nodeId: string) => {
+      const variationStartNodeId = MoveTreeUtils.getVariationStartNodeId(
+        moveTree,
+        nodeId
+      );
+
+      if (!variationStartNodeId) return;
+      deleteBranch(variationStartNodeId);
+    },
+    [moveTree, deleteBranch]
+  );
+
   // Promote a branch to the main line
   const promoteToMainLine = useCallback(
     (nodeId: string) => {
+      setIsManualTreeOperation(true);
+      lastManualOperationRef.current = Date.now();
+
       const newTree = MoveTreeUtils.promoteToMainLine(moveTree, nodeId);
       setMoveTree(newTree);
     },
@@ -450,6 +470,7 @@ export const useChessActionsWithBranches = (
     goToNode,
     goToBranch,
     deleteBranch,
+    deleteLine,
     promoteToMainLine,
     updateNodeComment,
 

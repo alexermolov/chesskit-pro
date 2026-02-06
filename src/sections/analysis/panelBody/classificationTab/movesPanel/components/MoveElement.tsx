@@ -14,6 +14,7 @@ interface MoveElementProps {
   onMoveClick: (nodeId: string) => void;
   onStartEditComment: (nodeId: string, comment: string) => void;
   onPromoteToMainLine?: (nodeId: string) => void;
+  onDeleteThisLine?: (nodeId: string) => void;
   indentStyle: object;
   colors: any;
   theme: any;
@@ -29,6 +30,7 @@ export const MoveElement = ({
   onMoveClick,
   onStartEditComment,
   onPromoteToMainLine,
+  onDeleteThisLine,
   indentStyle,
   colors,
   theme,
@@ -41,8 +43,8 @@ export const MoveElement = ({
 
   const handleContextMenu = useCallback(
     (event: React.MouseEvent) => {
-      // Only show context menu if node is in a variation and promote function is available
-      if (isInVariation && onPromoteToMainLine) {
+      // Only show context menu if node is in a variation and at least one action is available
+      if (isInVariation && (onPromoteToMainLine || onDeleteThisLine)) {
         event.preventDefault();
         setContextMenu(
           contextMenu === null
@@ -54,7 +56,7 @@ export const MoveElement = ({
         );
       }
     },
-    [isInVariation, onPromoteToMainLine, contextMenu]
+    [isInVariation, onPromoteToMainLine, onDeleteThisLine, contextMenu]
   );
 
   const handleCloseContextMenu = useCallback(() => {
@@ -67,6 +69,13 @@ export const MoveElement = ({
     }
     handleCloseContextMenu();
   }, [onPromoteToMainLine, nodeId, handleCloseContextMenu]);
+
+  const handleDeleteThisLine = useCallback(() => {
+    if (onDeleteThisLine && nodeId) {
+      onDeleteThisLine(nodeId);
+    }
+    handleCloseContextMenu();
+  }, [onDeleteThisLine, nodeId, handleCloseContextMenu]);
 
   const handleDoubleClick = useCallback(() => {
     if (nodeId) {
@@ -100,7 +109,7 @@ export const MoveElement = ({
       }}
     >
       <Tooltip
-        title={`Click - go to move, Double click - ${hasActualComment ? "edit comment" : "add comment"}${isInVariation && onPromoteToMainLine ? ", Right click - promote to main line" : ""}`}
+        title={`Click - go to move, Double click - ${hasActualComment ? "edit comment" : "add comment"}${isInVariation && (onPromoteToMainLine || onDeleteThisLine) ? ", Right click - line actions" : ""}`}
         arrow
         enterDelay={700}
       >
@@ -155,13 +164,24 @@ export const MoveElement = ({
             : undefined
         }
       >
-        <MenuItem onClick={handlePromoteToMainLine}>
-          <Icon
-            icon="mdi:arrow-up-bold"
-            style={{ marginRight: "8px", fontSize: "18px" }}
-          />
-          {t("promote_to_main_line")}
-        </MenuItem>
+        {onPromoteToMainLine && (
+          <MenuItem onClick={handlePromoteToMainLine}>
+            <Icon
+              icon="mdi:arrow-up-bold"
+              style={{ marginRight: "8px", fontSize: "18px" }}
+            />
+            {t("promote_to_main_line")}
+          </MenuItem>
+        )}
+        {onDeleteThisLine && (
+          <MenuItem onClick={handleDeleteThisLine}>
+            <Icon
+              icon="mdi:delete"
+              style={{ marginRight: "8px", fontSize: "18px" }}
+            />
+            {t("delete_this_line")}
+          </MenuItem>
+        )}
       </Menu>
 
       {/* Add comment button if there is no real comment */}

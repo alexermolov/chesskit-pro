@@ -17,6 +17,7 @@ export function PgnDisplay({
   onMoveClick,
   onCommentUpdate,
   onPromoteToMainLine,
+  onDeleteThisLine,
   currentNodeId,
 }: PgnDisplayProps) {
   const { colors, theme } = useThemeColors();
@@ -164,6 +165,7 @@ export function PgnDisplay({
                   onMoveClick={onMoveClick}
                   onStartEditComment={handleStartEditComment}
                   onPromoteToMainLine={onPromoteToMainLine}
+                  onDeleteThisLine={onDeleteThisLine}
                   indentStyle={{}}
                   colors={colors}
                   theme={theme}
@@ -194,6 +196,7 @@ export function PgnDisplay({
                 onMoveClick={onMoveClick}
                 onStartEditComment={handleStartEditComment}
                 onPromoteToMainLine={onPromoteToMainLine}
+                onDeleteThisLine={onDeleteThisLine}
                 indentStyle={indentStyle}
                 colors={colors}
                 theme={theme}
@@ -301,6 +304,9 @@ export function PgnDisplay({
     moveTree,
     colors,
     onMoveClick,
+    onPromoteToMainLine,
+    onDeleteThisLine,
+    isNodeInVariation,
     theme,
     editingComment,
     commentText,

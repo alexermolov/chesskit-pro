@@ -24,5 +24,6 @@ export interface PgnDisplayProps {
   onMoveClick: (nodeId: string) => void;
   onCommentUpdate: (nodeId: string, comment: string | null) => void;
   onPromoteToMainLine?: (nodeId: string) => void;
+  onDeleteThisLine?: (nodeId: string) => void;
   currentNodeId: string;
 }
