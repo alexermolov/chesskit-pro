@@ -1,6 +1,8 @@
 import { EngineWorker } from "@/types/engine";
 import { isIosDevice, isMobileDevice } from "./shared";
 
+const DEFAULT_RECOMMENDED_WORKERS_NB = 4;
+
 export const getEngineWorker = (enginePath: string): EngineWorker => {
   const worker = new window.Worker(enginePath);
 
@@ -43,6 +45,10 @@ export const sendCommandsToWorker = (
 };
 
 export const getRecommendedWorkersNb = (): number => {
+  if (typeof navigator === "undefined") {
+    return DEFAULT_RECOMMENDED_WORKERS_NB;
+  }
+
   const maxWorkersNbFromThreads = Math.max(
     1,
     Math.round(navigator.hardwareConcurrency - 4),
